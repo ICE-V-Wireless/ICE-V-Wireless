@@ -1,0 +1,14 @@
+# ##############################################################################
+# iCEcube PCF
+# Version:            2016.02.27810
+# File Generated:     May 3 2016 09:34:27
+# Family & Device:    iCE5LP4K
+# Package:            SG48
+# ##############################################################################
+
+set_io pin_41 41
+
+set_io SPI_MISO 14
+set_io SPI_SCLK 15
+set_io SPI_CSL 16
+set_io SPI_MOSI 17

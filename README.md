@@ -1,7 +1,8 @@
 # ESP32C3_FPGA
 Combined ESP32C3 and iCE40 FPGA board
 
-![alt text](docs/c3_fpga.jpg "Preliminary lashup with breakouts")
+<img src="docs/3D_front.png" width="640" />
+<img src="docs/3D_back.png" width="640" />
 
 ## Abstract
 This project combines an Espressif ESP32C3HN4 SoC (which includes 4MB of

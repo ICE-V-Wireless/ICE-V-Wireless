@@ -8,16 +8,25 @@ Combined ESP32C3 and iCE40 FPGA board
 This project combines an Espressif ESP32C3HN4 SoC (which includes 4MB of
 flash in the package) with a Lattice iCE40 FPGA (either an iCE5LP4k or
 iCE40UP5k or other pin an package-compatible devices) to allow WiFi and
-Bluetooth control of the FPGA configuration and control. ESP32 and FPGA
-I/O is mostly uncommitted except for the pins used for SPI communication.
+Bluetooth control of the FPGA. ESP32 and FPGA I/O is mostly uncommitted
+except for the pins used for SPI communication between ESP32 and FPGA.
 Several of the ESP32C3 GPIO pins are available for additonal interfaces
-such as ADC, I2C, etc.
+such as serial, ADC, I2C, etc.
 
 This project comprises both hardware, firmware, gateware and host-side
 communication utilities.
 
 ## Hardware
 The hardware design is provided as schematic and layout in KiCAD 6 format.
+The design provides:
+* Three standard PMOD connectors spaced to accomodate
+dual-PMOD modules with all eight signal pins directly connected to the
+FPGA.
+* Additional I/O connector with seven ESP32C3 GPIO lines and one FPGA
+line, along with power and ground connections.
+* USB-C connector for power, programming and JTAG debugging.
+* LiPo Battery operation and charging.
+* PCB antenna for WiFi and Bluetooth.
 
 ## Firmware
 The ESP32 firmware is written in C with the ESP-IDF V5.0 toolchain and

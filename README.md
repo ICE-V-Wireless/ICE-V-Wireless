@@ -48,3 +48,13 @@ A command-line Python script is provided to communicate over TCP sockets
 with the ESP32C3 which supports the features outlined in the Firmware section
 above.
 
+## Status
+###05-17-2022
+PCBs from the first revision are back from the board house and I've built one
+up. A few minor issues were discovered that had easy work-arounds, as well as
+a bug in the firmware configuration process. All essential parts
+of the project are tested out and working now and I've got the changes for a
+second revision ready to roll.
+
+<img src="docs/rev0.1_photo.jpeg" width="640" />
+

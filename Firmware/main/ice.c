@@ -7,17 +7,18 @@
 #include "ice.h"
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
+#include "rom/ets_sys.h"
 
 /**
   * @brief  SPI Interface pins
   */
 #define ICE_SPI_HOST		SPI2_HOST
-#define ICE_SPI_SCK_PIN		2
-#define ICE_SPI_MISO_PIN	3
-#define ICE_SPI_MOSI_PIN	0
-#define ICE_SPI_CS_PIN		1
-#define ICE_CDONE_PIN		5
-#define ICE_CRST_PIN		4
+#define ICE_SPI_SCK_PIN		5 //2
+#define ICE_SPI_MISO_PIN	4 //3
+#define ICE_SPI_MOSI_PIN	7 //0
+#define ICE_SPI_CS_PIN		6 //1
+#define ICE_CDONE_PIN		0 //5
+#define ICE_CRST_PIN		1 //4
 
 #define ICE_SPI_CS_LOW()	gpio_set_level(ICE_SPI_CS_PIN,0)
 #define ICE_SPI_CS_HIGH()	gpio_set_level(ICE_SPI_CS_PIN,1)
@@ -42,7 +43,7 @@ void ICE_Init(void)
         .max_transfer_sz = ICE_SPI_MAX_XFER,
     };
     spi_device_interface_config_t devcfg={
-        .clock_speed_hz=40*1000*1000,           //Clock out at 26 MHz
+        .clock_speed_hz=10*1000*1000,           //Clock out at 40 MHz
         .mode=0,                                //SPI mode 0
         .spics_io_num=-1,                       //CS pin not used
         .queue_size=7,                          //We want to be able to queue 7 transactions at a time
@@ -50,6 +51,9 @@ void ICE_Init(void)
 
     //Initialize the SPI bus
     ESP_LOGI(TAG, "Initialize SPI");
+	gpio_reset_pin(ICE_SPI_MISO_PIN);
+	gpio_reset_pin(ICE_SPI_MOSI_PIN);
+	gpio_reset_pin(ICE_SPI_SCK_PIN);
     ret=spi_bus_initialize(ICE_SPI_HOST, &buscfg, SPI_DMA_CH_AUTO);
     ESP_ERROR_CHECK(ret);
 	
@@ -60,6 +64,7 @@ void ICE_Init(void)
     //Initialize non-SPI GPIOs
 	/* pins 4-7 must be reset prior to use to get out of JTAG mode */
     ESP_LOGI(TAG, "Initialize GPIO");
+	gpio_reset_pin(ICE_SPI_CS_PIN);
     gpio_set_direction(ICE_SPI_CS_PIN, GPIO_MODE_OUTPUT);
 	ICE_SPI_CS_HIGH();
 	gpio_reset_pin(ICE_CRST_PIN);
@@ -141,15 +146,18 @@ void ICE_SPI_WriteBlk(uint8_t *Data, uint32_t Count)
 uint8_t ICE_FPGA_Config(uint8_t *bitmap, uint32_t size)
 {
 	uint32_t timeout;
-	
-	/* drop CS bit to signal slave mode */
-	ICE_SPI_CS_LOW();
-	
+
 	/* drop reset bit */
 	ICE_CRST_LOW();
 	
 	/* delay */
-	vTaskDelay(1);
+	ets_delay_us(1);
+	
+	/* drop CS bit to signal slave mode */
+	ICE_SPI_CS_LOW();
+	
+	/* delay */
+	ets_delay_us(200);
 	
 	/* Wait for done bit to go inactive */
 	timeout = 100;
@@ -166,12 +174,26 @@ uint8_t ICE_FPGA_Config(uint8_t *bitmap, uint32_t size)
 	/* raise reset */
 	ICE_CRST_HIGH();
 	
-	/* delay to allow FPGA to reset */
-	vTaskDelay(1);
+	/* delay >1200us to allow FPGA to clear */
+	ets_delay_us(2000);
+    //vTaskDelay(1);
 	
 	/* send the bitstream */
 	ICE_SPI_WriteBlk(bitmap, size);
-	
+#if 1
+    /* new ending logic */
+    /* raise CS */
+	ICE_SPI_CS_HIGH();
+
+    /* Quick send 160 dummy clocks */
+	uint8_t dummy[20] = {0};
+	ICE_SPI_WriteBlk(dummy, 20);
+
+    /* error if DONE not asserted */
+    if(ICE_CDONE_GET()==0)
+    	return 2;
+#else
+    /* old ending logic is too slow */
 	/* send clocks while waiting for DONE to assert */
 	timeout = 100;
 	while(timeout && (ICE_CDONE_GET()==0))
@@ -197,7 +219,8 @@ uint8_t ICE_FPGA_Config(uint8_t *bitmap, uint32_t size)
 
 	/* Raise CS bit for subsequent port transactions */
 	ICE_SPI_CS_HIGH();
-	
+#endif
+
 	/* no error handling for now */
 	return 0;
 }

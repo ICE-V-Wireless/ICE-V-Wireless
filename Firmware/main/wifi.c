@@ -15,9 +15,11 @@
 #include "lwip/sys.h"
 #include "lwip/sockets.h"
 #include "lwip/netdb.h"
+#include "rom/crc.h"
 #include "ice.h"
 #include "spiffs.h"
 #include "phy.h"
+#include "credentials.h"
 
 static const char *TAG = "wifi";
 
@@ -33,8 +35,6 @@ static esp_netif_t *s_example_esp_netif = NULL;
 //extern void phy_bbpll_en_usb(bool en);
 
 /* stuff that's usually in the menuconfig */
-#define CONFIG_EXAMPLE_WIFI_SSID "dummy"
-#define CONFIG_EXAMPLE_WIFI_PASSWORD "dummy"
 #define CONFIG_EXAMPLE_WIFI_SCAN_RSSI_THRESHOLD -127
 #define EXAMPLE_WIFI_SCAN_METHOD WIFI_ALL_CHANNEL_SCAN
 #define EXAMPLE_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA2_PSK
@@ -327,6 +327,8 @@ static void do_getmsg(const int sock)
 							txsz = header.words[1];
 							ESP_LOGI(TAG, "State 0: Found header: cmd %1X, txsz = %d", cmd, txsz);
 							
+							ESP_LOGI(TAG, "State 0: expanding size by 20 bytes for tail");
+                            
 							/* allocate a buffer for the data */
 							filebuffer = malloc(txsz);
 							if(filebuffer)
@@ -350,7 +352,9 @@ static void do_getmsg(const int sock)
 							/* done? */
 							if((tot-8)==txsz)
 							{
-								ESP_LOGI(TAG, "State 0: Done - Received %d", txsz);
+                                /* compute CRC32 to match linux crc32 cmd */
+                                uint32_t crc = crc32_le(0, (uint8_t *)filebuffer, txsz);
+								ESP_LOGI(TAG, "State 0: Done - Received %d, CRC32 = 0x%08X", txsz, crc);
 								handle_message(sock, &err, cmd, filebuffer, txsz);
 								
 								/* free the buffer */
@@ -400,7 +404,9 @@ static void do_getmsg(const int sock)
 							/* done? */
 							if((tot-8)==txsz)
 							{
-								ESP_LOGI(TAG, "State 1: Done - Received %d", txsz);
+                                /* compute CRC32 to match linux crc32 cmd */
+                                uint32_t crc = crc32_le(0, (uint8_t *)filebuffer, txsz);
+								ESP_LOGI(TAG, "State 1: Done - Received %d, CRC32 = 0x%08X", txsz, crc);
 								
 								/* process it */
 								handle_message(sock, &err, cmd, filebuffer, txsz);

@@ -69,11 +69,30 @@ def write_reg(reg, data, addr, port):
             print("Error", reply[0])
         s.close()
 
+# send a read command plus register address
+def read_vbat():
+    magic = make_magic(2)
+    regsz = 4
+    reg = 0
+    size = regsz.to_bytes(4, byteorder = 'little')
+    payload = b"".join([magic, size, reg.to_bytes(4, byteorder = 'little')])
+    
+    # send to the socket server on the C3
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((addr, port))
+        s.sendall(payload)
+        reply = s.recv(1024)
+        if reply[0]!= 0 :
+            print("Error", reply[0])
+        else:
+            print("Vbat =", int.from_bytes(reply[1:4], byteorder='little'), "mV")
+        s.close()
+
 # usage text for command line
 def usage():
     print(sys.argv[0], " [options] <file> send binary file to ESP32C3 FPGA")
     print("  -h, --help            : this message")
-    print("  -a, --address=ip_addr : address of ESP32C3 (default 192.168.0.128)")
+    print("  -a, --address=ip_addr : address of ESP32C3 (default 192.168.0.132)")
     print("  -c, --command=[0-15]  : command (default 15 = load FPGA, else write file)")
     print("  -p, --port=portnum    : port of FPGA load (default 3333)")
     print("  -r, --register=REG    : register to read/write (default 0)")
@@ -89,7 +108,7 @@ if __name__ == "__main__":
         sys.exit(2)
 
     # defaults
-    addr = "192.168.0.128"
+    addr = "192.168.0.132"
     port = 3333
     cmmd = 15
     reg = 0
@@ -121,6 +140,8 @@ if __name__ == "__main__":
             read_reg(reg, addr, port)
         elif cmmd == 1:
             write_reg(reg, int(args[0]), addr, port)
+        elif cmmd == 2:
+            read_vbat()
 
 
 

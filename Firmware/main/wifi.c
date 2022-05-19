@@ -20,6 +20,7 @@
 #include "spiffs.h"
 #include "phy.h"
 #include "credentials.h"
+#include "adc_c3.h"
 
 static const char *TAG = "wifi";
 
@@ -213,7 +214,7 @@ static void handle_message(const int sock, char *err, char cmd, char *buffer, in
 	
 	if(cmd == 0xf)
 	{
-		/* send to FPGA */
+		/* send configuration to FPGA */
 		uint8_t cfg_stat;	
 		if((cfg_stat = ICE_FPGA_Config((uint8_t *)buffer, txsz)))
 		{
@@ -225,7 +226,7 @@ static void handle_message(const int sock, char *err, char cmd, char *buffer, in
 	}
 	else if(cmd == 0xe)
 	{
-		/* save to the SPIFFS filesystem */
+		/* save configuration to the SPIFFS filesystem */
 		uint8_t cfg_stat;	
 		if((cfg_stat = spiffs_write((char *)cfg_file, (uint8_t *)buffer, txsz)))
 		{
@@ -237,16 +238,24 @@ static void handle_message(const int sock, char *err, char cmd, char *buffer, in
 	}
 	else if(cmd == 0)
 	{
+        /* Read SPI register */
 		uint8_t Reg = *(uint32_t *)buffer & 0x7f;
 		ICE_FPGA_Serial_Read(Reg, &Data);
 		ESP_LOGI(TAG, "Reg read %d = 0x%08X", *(uint32_t *)buffer, Data);
 	}
 	else if(cmd == 1)
 	{
+        /* Write SPI register */
 		uint8_t Reg = *(uint32_t *)buffer & 0x7f;
 		Data = *(uint32_t *)&buffer[4];
 		ESP_LOGI(TAG, "Reg write %d = %d", Reg, Data);
 		ICE_FPGA_Serial_Write(Reg, Data);
+	}
+	else if(cmd == 2)
+	{
+        /* Report Vbat */
+        Data = 2*(uint32_t)adc_c3_get();
+		ESP_LOGI(TAG, "Vbat = %d mV", Data);
 	}
 	else
 	{
@@ -258,9 +267,9 @@ static void handle_message(const int sock, char *err, char cmd, char *buffer, in
 	ESP_LOGI(TAG, "Replying with %d", *err);
 	// send() can return less bytes than supplied length.
 	// Walk-around for robust implementation.
-	int to_write = cmd == 0 ? 5 : 1;
+	int to_write = ((cmd == 0) || (cmd==2)) ? 5 : 1;
 	sbuf[0] = *err;
-	if(cmd==0)
+	if((cmd==0) || (cmd==2))
 		memcpy(&sbuf[1], &Data, 4);
 	while (to_write > 0) {
 		int written = send(sock, sbuf, to_write, 0);

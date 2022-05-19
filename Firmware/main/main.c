@@ -10,6 +10,7 @@
 #include "rom/crc.h"
 #include "spiffs.h"
 #include "wifi.h"
+#include "adc_c3.h"
 
 #define LED_PIN 10
 
@@ -63,6 +64,12 @@ void app_main(void)
 	}
 #endif
 
+    /* init ADC for Vbat readings */
+    if(!adc_c3_init())
+        ESP_LOGI(TAG, "ADC Initialized");
+    else
+        ESP_LOGW(TAG, "ADC Init Failed");
+    
 #if 1
 	/* init WiFi & socket */
 	if(!wifi_init())
@@ -79,6 +86,7 @@ void app_main(void)
 	{
 		gpio_set_level(LED_PIN, i);
 		//printf("%d\n", i);
+		printf("Vbat = %d mV\n", 2*adc_c3_get());
 		i^=1;
 		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}

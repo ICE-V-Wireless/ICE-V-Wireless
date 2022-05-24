@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name "Espressif")(type "KiCad")(uri "${KIPRJMOD}/libs/Espressif.pretty")(options "")(descr ""))
+)

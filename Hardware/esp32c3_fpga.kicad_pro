@@ -385,9 +385,7 @@
         "microvia_diameter": 0.3,
         "microvia_drill": 0.1,
         "name": "50ohm",
-        "nets": [
-          "/LNA_IN"
-        ],
+        "nets": [],
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "schematic_color": "rgba(0, 0, 0, 0.000)",
         "track_width": 0.3048,
@@ -405,9 +403,7 @@
         "microvia_diameter": 0.3,
         "microvia_drill": 0.1,
         "name": "Antenna",
-        "nets": [
-          "/Ant"
-        ],
+        "nets": [],
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "schematic_color": "rgba(0, 0, 0, 0.000)",
         "track_width": 0.508,
@@ -454,7 +450,6 @@
           "+1V2",
           "+3V3",
           "/VCC_PLL",
-          "/VDD_3P3",
           "GND"
         ],
         "pcb_color": "rgba(0, 0, 0, 0.000)",

@@ -5,9 +5,9 @@
   (paper "B")
 
   (title_block
-    (title "ESP32C3 + iCE40 FPGA")
+    (title "ICE-V Wireless")
     (date "2022-05-12")
-    (rev "0.2")
+    (rev "0.0")
   )
 
   (lib_symbols
@@ -4909,10 +4909,6 @@
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid 0a9c24d3-b7ea-4829-9432-7461f680fac7)
   )
-  (text "FPGA_P47" (at 234.95 99.06 0)
-    (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid 27c4793c-0538-4781-b3b5-9166f5749050)
-  )
   (text "Power" (at 95.885 203.835 0)
     (effects (font (size 1.524 1.524)) (justify left bottom))
     (uuid 3b810058-7542-4d4d-949d-a7602c242fd4)
@@ -5209,6 +5205,10 @@
   (label "12MHz" (at 342.265 149.86 0)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid cff809cd-8dd0-43f8-a965-9470d56fa251)
+  )
+  (label "FPGA_P47" (at 234.95 99.06 0)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid da0c8d41-b39e-4471-8532-960046ed3b3c)
   )
   (label "FPGA_P48" (at 213.36 99.06 0)
     (effects (font (size 1.27 1.27)) (justify left bottom))

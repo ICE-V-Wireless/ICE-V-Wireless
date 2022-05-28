@@ -8204,7 +8204,7 @@
     (property "Value" "SW_Push" (id 1) (at 38.0492 112.903 90)
       (effects (font (size 1.27 1.27)) (justify left) hide)
     )
-    (property "Footprint" "Button_Switch_SMD:SW_Push_1P1T_NO_Vertical_Wuerth_434133025816" (id 2) (at 39.37 111.76 0)
+    (property "Footprint" "ice-v-wireless:SW_SPST_PTS815" (id 2) (at 39.37 111.76 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (id 3) (at 39.37 111.76 0)
@@ -8238,7 +8238,7 @@
     (property "Value" "SW_Push" (id 1) (at 70.0024 44.45 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "Footprint" "Button_Switch_SMD:SW_Push_1P1T_NO_Vertical_Wuerth_434133025816" (id 2) (at 69.85 44.45 0)
+    (property "Footprint" "ice-v-wireless:SW_SPST_PTS815" (id 2) (at 69.85 44.45 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (id 3) (at 69.85 44.45 0)
@@ -8728,10 +8728,10 @@
       (reference "RN6") (unit 1) (value "33") (footprint "Resistor_SMD:R_Array_Concave_4x0402")
     )
     (path "/fbaad8b1-4e7c-40d1-9bcd-36259897907f"
-      (reference "SW1") (unit 1) (value "SW_Push") (footprint "Button_Switch_SMD:SW_Push_1P1T_NO_Vertical_Wuerth_434133025816")
+      (reference "SW1") (unit 1) (value "SW_Push") (footprint "ice-v-wireless:SW_SPST_PTS815")
     )
     (path "/f66b82ab-c203-4cb4-84ea-abcb2cd50a9c"
-      (reference "SW2") (unit 1) (value "SW_Push") (footprint "Button_Switch_SMD:SW_Push_1P1T_NO_Vertical_Wuerth_434133025816")
+      (reference "SW2") (unit 1) (value "SW_Push") (footprint "ice-v-wireless:SW_SPST_PTS815")
     )
     (path "/d0def903-5ef5-41dd-b724-8a7f660f25eb"
       (reference "U1") (unit 1) (value "XC6222B331MR-G") (footprint "Package_TO_SOT_SMD:SOT-23-5")

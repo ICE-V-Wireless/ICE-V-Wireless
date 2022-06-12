@@ -1,0 +1,77 @@
+[*]
+[*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
+[*] Mon Apr 26 21:57:46 2021
+[*]
+[dumpfile] "/home/ericb/Engineering/KBADC/lattice/up5k_osc/riscv/icarus/tb_system.vcd"
+[dumpfile_mtime] "Mon Apr 26 21:52:28 2021"
+[dumpfile_size] 6083607
+[savefile] "/home/ericb/Engineering/KBADC/lattice/up5k_osc/riscv/icarus/tb_system.gtkw"
+[timestart] 0
+[size] 1211 600
+[pos] -1 -1
+*-27.720356 1000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb_system.
+[treeopen] tb_system.u_riscv.
+[sst_width] 217
+[signals_width] 150
+[sst_expanded] 1
+[sst_vpaned_height] 144
+@200
+-TB
+@22
+tb_system.a0[11:0]
+tb_system.a1[11:0]
+tb_system.a2[11:0]
+tb_system.a3[11:0]
+@28
+tb_system.clk
+tb_system.reset
+tb_system.rx
+tb_system.tx
+@201
+-System
+@28
+tb_system.u_riscv.RX
+tb_system.u_riscv.TX
+tb_system.u_riscv.clk24
+@22
+tb_system.u_riscv.cnt[31:0]
+@28
+tb_system.u_riscv.cnt_sel
+tb_system.u_riscv.diag
+@22
+tb_system.u_riscv.gio_do[31:0]
+@28
+tb_system.u_riscv.gio_sel
+@22
+tb_system.u_riscv.gp_in0[31:0]
+tb_system.u_riscv.gp_in1[31:0]
+tb_system.u_riscv.gp_in2[31:0]
+tb_system.u_riscv.gp_in3[31:0]
+tb_system.u_riscv.gp_out[31:0]
+tb_system.u_riscv.mem_addr[31:0]
+@28
+tb_system.u_riscv.mem_instr
+@22
+tb_system.u_riscv.mem_rdata[31:0]
+@28
+tb_system.u_riscv.mem_rdy
+tb_system.u_riscv.mem_ready
+tb_system.u_riscv.mem_valid
+@22
+tb_system.u_riscv.mem_wdata[31:0]
+tb_system.u_riscv.mem_wstrb[3:0]
+tb_system.u_riscv.ram_do[31:0]
+@28
+tb_system.u_riscv.ram_sel
+tb_system.u_riscv.reset
+@22
+tb_system.u_riscv.rom_do[31:0]
+@28
+tb_system.u_riscv.rom_sel
+@22
+tb_system.u_riscv.ser_do[7:0]
+@28
+tb_system.u_riscv.ser_sel
+[pattern_trace] 1
+[pattern_trace] 0

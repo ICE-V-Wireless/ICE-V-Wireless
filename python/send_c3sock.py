@@ -50,7 +50,7 @@ def read_reg(reg, addr, port):
         if reply[0]!= 0 :
             print("Error", reply[0])
         else:
-            print("Read Value", int.from_bytes(reply[1:4], byteorder='little'))
+            print("Read Reg", reg, "=", hex(int.from_bytes(reply[1:5], byteorder='little')))
         s.close()
 
 # send a write command plus register address and data
@@ -90,17 +90,20 @@ def read_vbat():
 
 # usage text for command line
 def usage():
-    print(sys.argv[0], " [options] <file> send binary file to ESP32C3 FPGA")
+    print(sys.argv[0], " [options] [<file>] | [DATA] communicate with ESP32C3 FPGA")
     print("  -h, --help            : this message")
     print("  -a, --address=ip_addr : address of ESP32C3 (default 192.168.0.132)")
-    print("  -c, --command=[0-15]  : command (default 15 = load FPGA, else write file)")
+    print("  -b, --battery         : report battery voltage (in millivolts)")
+    print("  -c, --command=[0-15]  : command (default 15 = load FPGA with <file>)")
+    print("  -f, --flash           : write <file> to SPIFFS flash")
     print("  -p, --port=portnum    : port of FPGA load (default 3333)")
-    print("  -r, --register=REG    : register to read/write (default 0)")
+    print("  -r, --read=REG        : register to read")
+    print("  -w, --write=REG DATA  : register to write and data to write")
 
 # main entry
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "ha:c:p:r:", ["help", "address=", "command=", "port="])
+        opts, args = getopt.getopt(sys.argv[1:], "ha:bc:p:r:w:", ["help", "address=", "battery", "command=", "port=", "read=", "write="])
     except getopt.GetoptError as err:
         # print help information and exit:
         print(err)  # will print something like "option -a not recognized"
@@ -120,12 +123,18 @@ if __name__ == "__main__":
             sys.exit()
         elif o in ("-a", "--addr"):
             addr = a
-        elif o in ("-c", "--comm"):
+        elif o in ("-b", "--battery"):
+            cmmd = 2
+        elif o in ("-c", "--command"):
             cmmd = int(a) & 15
         elif o in ("-p", "--port"):
             port = int(a)
-        elif o in ("-r", "--reg"):
+        elif o in ("-r", "--read"):
             reg = int(a)
+            cmmd = 0
+        elif o in ("-w", "--write"):
+            reg = int(a)
+            cmmd = 1
         else:
             assert False, "unhandled option"
     
@@ -139,7 +148,10 @@ if __name__ == "__main__":
         if cmmd == 0:
             read_reg(reg, addr, port)
         elif cmmd == 1:
-            write_reg(reg, int(args[0]), addr, port)
+            if len(args) > 0:
+                write_reg(reg, int(args[0]), addr, port)
+            else:
+                print("missing write data")
         elif cmmd == 2:
             read_vbat()
 

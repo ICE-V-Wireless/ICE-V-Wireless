@@ -1,11 +1,11 @@
-# ESP32C3_FPGA
+# ICE-V Wirelss
 Combined ESP32C3 and iCE40 FPGA board
 
 <img src="docs/3D_front.png" width="640" />
 <img src="docs/3D_back.png" width="640" />
 
 ## Abstract
-This project combines an Espressif ESP32C3HN4 SoC (which includes 4MB of
+This project combines an Espressif ESP32-C3-MINI-1 (which includes 4MB of
 flash in the package) with a Lattice iCE40 FPGA (either an iCE5LP4k or
 iCE40UP5k or other pin an package-compatible devices) to allow WiFi and
 Bluetooth control of the FPGA. ESP32 and FPGA I/O is mostly uncommitted
@@ -47,24 +47,3 @@ possible.
 A command-line Python script is provided to communicate over TCP sockets
 with the ESP32C3 which supports the features outlined in the Firmware section
 above.
-
-## Status
-### 05-17-2022
-PCBs from the first revision are back from the board house and I've built one
-up. A few minor issues were discovered that had easy work-arounds, as well as
-a bug in the firmware configuration process. All essential parts
-of the project are tested out and working now and I've got the changes for a
-second revision ready to roll.
-
-<img src="docs/rev0.1_photo.jpeg" width="640" />
-
-### 05-24-2022
-We're looking at a "community-base" upgrade to the project now. Lots of changes:
-* Switching to a C3 Mini module that's pre-certified and less cost & hassle than the discrete
-approach of this design.
-* Revising the PMOD pinouts to support higher-performance.
-* Adding source termination to all PMOD I/O to reduce EMI.
-* More tweaks TBD.
-
-Find it here:
-https://github.com/mwelling/ICE-V-Wireless

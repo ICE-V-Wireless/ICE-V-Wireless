@@ -1,4 +1,4 @@
-# ICE-V Wirelss
+# ICE-V Wireless
 Combined ESP32C3 and iCE40 FPGA board
 
 <img src="docs/3D_front.png" width="640" />

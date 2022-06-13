@@ -58,3 +58,13 @@ second revision ready to roll.
 
 <img src="docs/rev0.1_photo.jpeg" width="640" />
 
+### 05-24-2022
+We're looking at a "community-base" upgrade to the project now. Lots of changes:
+* Switching to a C3 Mini module that's pre-certified and less cost & hassle than the discrete
+approach of this design.
+* Revising the PMOD pinouts to support higher-performance.
+* Adding source termination to all PMOD I/O to reduce EMI.
+* More tweaks TBD.
+
+Find it here:
+https://github.com/mwelling/ICE-V-Wireless

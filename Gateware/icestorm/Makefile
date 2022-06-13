@@ -1,54 +1,74 @@
 # Makefile for icestorm tools + yosys + nextpnr
 # Modified from examples in icestorm distribution
-# 02-28-19 E. Brombaugh
+# 01-16-18 E. Brombaugh
 
 # src directory
-VPATH = ../src
+VPATH = ../src ../riscv/src
 
-SRC = ../src/lp4k_bob.v ../src/spi_slave.v
+SRC =	../src/up5k_esp32c3.v ../src/spi_slave.v \
+		../riscv/src/system.v ../riscv/src/picorv32.v \
+		../riscv/src/spram_16kx32.v \
+		../riscv/src/acia.v ../riscv/src/acia_tx.v ../riscv/src/acia_rx.v \
+		../riscv/src/wb_bus.v ../riscv/src/wb_master.v \
+		../riscv/src/mailbox.v ../riscv/src/fifo1.v
 
-PROJ = lp4k_bob
-PIN_DEF = ../src/lp4k_bob.pcf
-DEVICE = u4k
+# preparing the machine code
+FAKE_HEX =	rom.hex
+REAL_HEX =  code.hex
 
-YOSYS = yosys
-NEXTPNR = nextpnr-ice40
-#NEXTPNR_ARGS = --pre-pack $(SDC) --ignore-loops
-#NEXTPNR_ARGS =  --pre-pack $(SDC)
-NEXTPNR_ARGS =  --pcf-allow-unconstrained
-ICEPACK = icepack
-ICETIME = icetime
-ICEPROG = iceprog
-CDCPROG = cdc_prog
+# project stuff
+PROJ = up5k_esp32c3
+PIN_DEF = ../src/up5k_esp32c3.pcf
+SDC = ../src/up5k_esp32c3.sdc
+DEVICE = up5k
+PACKAGE = sg48
+
+TOOLS = /opt/openfpga/fpga-toolchain
+YOSYS = $(TOOLS)/bin/yosys
+NEXTPNR = $(TOOLS)/bin/nextpnr-ice40
+NEXTPNR_ARGS = --pre-pack $(SDC) --package $(PACKAGE) --$(DEVICE)
+ICEPACK = $(TOOLS)/bin/icepack
+ICETIME = $(TOOLS)/bin/icetime
+ICEPROG = $(TOOLS)/bin/iceprog
+ICEBRAM = $(TOOLS)/bin/icebram
+SENDBIT = ../../../espressif/esp32c3_fpga/send_c3sock.py
 VERILATOR = verilator
-TECH_LIB = /usr/local/share/yosys/ice40/cells_sim.v
+TECH_LIB = $(TOOLS)/share/yosys/ice40/cells_sim.v
 
 all: $(PROJ).bin
 
-%.json: $(SRC)
+$(FAKE_HEX):
+	$(ICEBRAM) -g 32 2048 > $(FAKE_HEX)
+
+%.json: $(SRC) $(FAKE_HEX)
 	$(YOSYS) -p 'synth_ice40 -top $(PROJ) -json $@' $(SRC)
 
 %.asc: %.json $(PIN_DEF) 
-	$(NEXTPNR) $(NEXTPNR_ARGS) --$(DEVICE) --json $< --pcf $(PIN_DEF) --asc $@
+	$(NEXTPNR) $(NEXTPNR_ARGS) --json $< --pcf $(PIN_DEF) --asc $@
+		
+$(REAL_HEX):
+	$(MAKE) -C ../riscv/c/ main.hex
+	cp ../riscv/c/main.hex ./$(REAL_HEX)
+		
+%.bin: %.asc $(REAL_HEX)
+	$(ICEBRAM) $(FAKE_HEX) $(REAL_HEX) < $< > temp.asc
+	$(ICEPACK) temp.asc $@
 
-%.bin: %.asc
-	$(ICEPACK) $< $@
+prog: $(PROJ).bin
+	$(SENDBIT) $(PROJ).bin
 
+recode:
+	rm -f $(REAL_HEX) $(PROJ).bin
+	$(MAKE) prog
+    
 %.rpt: %.asc
 	$(ICETIME) -d $(DEVICE) -mtr $@ $<
-
-#prog: $(PROJ).bin
-#	$(ICEPROG) -S $<
-    
-prog: $(PROJ).bin
-	$(CDCPROG) -p /dev/ttyACM0 $<
-
-sudo-prog: $(PROJ).bin
-	@echo 'Executing prog as root!!!'
-	sudo $(ICEPROG) -S -IB $<
+	
+lint: $(SRC)
+	$(VERILATOR) --lint-only -Wall --top-module $(PROJ) $(TECH_LIB) $(SRC)
 
 clean:
-	rm -f $(PROJ).json $(PROJ).asc $(PROJ).rpt $(PROJ).bin
+	rm -f *.json *.asc *.rpt *.bin *.hex
 
 .SECONDARY:
 .PHONY: all prog clean

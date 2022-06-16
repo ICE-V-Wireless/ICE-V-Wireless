@@ -28,6 +28,9 @@ line, along with power and ground connections.
 * LiPo Battery operation and charging.
 * PCB antenna for WiFi and Bluetooth.
 
+### Pinout
+<img src="docs/pinout.png" width="640" />
+
 ## Firmware
 The ESP32 firmware is written in C with the ESP-IDF V5.0 toolchain and
 libraries. Initially it provides a TCP socket interface over WiFi with the

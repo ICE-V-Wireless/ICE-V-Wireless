@@ -1,12 +1,12 @@
 legend = [
-    ("Analog", "analog"),
-    ("Ground", "gnd"),
-    ("GPIO", "gpio"),
-    ("NRST", "nrst"),
     ("Power", "pwr"),
+    ("Ground", "gnd"),
+    ("Analog GPIO", "analog"),
+    ("Digital GPIO", "gpio"),
+    ("NRST", "nrst"),
     ("FPGA", "fpga"),
-    ("FPGAP", "fpgap"),
-    ("FPGAN", "fpgan"),
+    ("FPGA diff+", "fpgap"),
+    ("FPGA diff-", "fpgan"),
 ]
 
 # Pinlabels
@@ -137,4 +137,4 @@ title = "<tspan class='h1'>ICE-V Wireless</tspan>"
 
 description = """ESP32C3 and iCE40UP5K FPGA for WiFi and 
 Bluetooth FPGA interfacing. More info at 
-<tspan class='italic strong'>https://github.com/mwelling/ICE-V-Wireless</tspan>"""
+<tspan class='italic strong'>https://github.com/ICE-V-Wireless/ICE-V-Wireless</tspan>"""

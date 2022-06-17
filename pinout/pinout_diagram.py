@@ -112,7 +112,7 @@ diagram.panel_02.add(
 legend = diagram.panel_02.add(
     Legend(
         data.legend,
-        x=340,
+        x=400,
         y=8,
         max_height=132,
     )

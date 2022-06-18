@@ -29,7 +29,7 @@ diagram.add_stylesheet("styles.css", embed=True)
 graphic = diagram.panel_01.add(Group(400, 42))
 
 # Add and embed an image
-hardware = graphic.add(Image("esp32c3_fpga_crop.png", embed=True))
+hardware = graphic.add(Image("ice-v_front.png", embed=True))
 
 # Measure and record key locations with the hardware Image instance
 hardware.add_coord("j3", 29, 251)

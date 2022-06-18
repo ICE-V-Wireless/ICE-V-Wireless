@@ -18,7 +18,7 @@ communication utilities.
 ## Hardware
 The hardware design is provided as schematic and layout in KiCAD 6 format.
 The design provides:
-* Three standard PMOD connectors spaced to accomodate
+* Three standard PMOD connectors spaced to accommodate
 dual-PMOD modules with all eight signal pins directly connected to the
 FPGA.
   * Many PMOD signals are available in differential pairs with the positive

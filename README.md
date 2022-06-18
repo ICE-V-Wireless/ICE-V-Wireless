@@ -1,8 +1,8 @@
 # ICE-V Wireless
 Combined ESP32C3 and iCE40 FPGA board
 
-<img src="docs/ice-v_front.png" width="640" />
-<img src="docs/ice-v_back.png" width="640" />
+<img src="docs/ice-v_front.jpg" width="640" />
+<img src="docs/ice-v_back.jpg" width="640" />
 
 ## Abstract
 This project combines an Espressif ESP32-C3-MINI-1 (which includes 4MB of
@@ -50,3 +50,8 @@ possible.
 A command-line Python script is provided to communicate over TCP sockets
 with the ESP32C3 which supports the features outlined in the Firmware section
 above.
+
+## Getting One
+See here:
+
+https://groupgets.com/campaigns/1036-ice-v-wireless

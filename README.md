@@ -1,3 +1,7 @@
+# Notice
+Repository moved to an org for easier collaboration.
+https://github.com/ICE-V-Wireless
+
 # ICE-V Wireless
 Combined ESP32C3 and iCE40 FPGA board
 
@@ -47,3 +51,5 @@ possible.
 A command-line Python script is provided to communicate over TCP sockets
 with the ESP32C3 which supports the features outlined in the Firmware section
 above.
+
+

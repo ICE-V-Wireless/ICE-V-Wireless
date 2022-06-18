@@ -28,6 +28,7 @@ and negative halves on adjacent odd/even pins.
 a solder blob).
 * Additional I/O connector with seven ESP32C3 GPIO lines and one FPGA
 line, along with power, ground and reset connections.
+* 8MB PSRAM connected directly to the FPGA.
 * USB-C connector for power, programming and JTAG debugging of the ESP32C3.
 * Tactile buttons for reset and boot mode selection of the ESP32C3.
 * RGB LED directly driven by the iCE40 FPGA

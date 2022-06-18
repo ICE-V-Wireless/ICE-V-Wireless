@@ -1,8 +1,8 @@
 # ICE-V Wireless
 Combined ESP32C3 and iCE40 FPGA board
 
-<img src="docs/3D_front.png" width="640" />
-<img src="docs/3D_back.png" width="640" />
+<img src="docs/ice-v_front.png" width="640" />
+<img src="docs/ice-v_back.png" width="640" />
 
 ## Abstract
 This project combines an Espressif ESP32-C3-MINI-1 (which includes 4MB of

@@ -31,7 +31,7 @@ ICEPACK = $(TOOLS)/bin/icepack
 ICETIME = $(TOOLS)/bin/icetime
 ICEPROG = $(TOOLS)/bin/iceprog
 ICEBRAM = $(TOOLS)/bin/icebram
-SENDBIT = ../../../espressif/esp32c3_fpga/send_c3sock.py
+SENDBIT = ../../python/send_c3sock.py
 VERILATOR = verilator
 TECH_LIB = $(TOOLS)/share/yosys/ice40/cells_sim.v
 

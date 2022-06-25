@@ -65,6 +65,12 @@ idf.py -p <serial device> monitor
   
 to view this information.
 
+## IP Addressing
+This firmware uses DHCP and mDNS to request an IP address from the router on the
+WiFi network and to advertise the address and its specific service/socket. If your
+system doesn't support mDNS then you'll need to query your DHCP server to
+find the IP address that it assigned to the ICE-V.
+
 ## Operation
 Once the firmware is running and connected to a WiFi network it creates a TCP
 socket on port 3333 which can be accessed without any security measures by any

@@ -137,7 +137,7 @@ def psram_read(psaddr, len, addr, port):
 def usage():
     print(sys.argv[0], " [options] [<file>] | [DATA] | [LEN] communicate with ESP32C3 FPGA")
     print("  -h, --help              : this message")
-    print("  -a, --address=ip_addr   : address of ESP32C3 (default 192.168.0.132)")
+    print("  -a, --address=ip_addr   : address of ESP32C3 (default ICE-V.local)")
     print("  -b, --battery           : report battery voltage (in millivolts)")
     print("  -f, --flash <file>      : write <file> to SPIFFS flash")
     print("  -p, --port=portnum      : port of FPGA load (default 3333)")
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         sys.exit(2)
 
     # defaults
-    addr = "192.168.0.132"
+    addr = "ICE-V.local"
     port = 3333
     cmmd = 15
     reg = 0

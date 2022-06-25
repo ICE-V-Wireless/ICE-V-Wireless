@@ -18,6 +18,7 @@
 #include "phy.h"
 #include "credentials.h"
 #include "socket.h"
+#include "mdns.h"
 
 static const char *TAG = "wifi";
 
@@ -205,6 +206,12 @@ esp_err_t wifi_init(void)
 	ESP_ERROR_CHECK(esp_netif_init());
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
 	ESP_ERROR_CHECK(example_connect());
+	
+	//initialize mDNS service
+    ESP_ERROR_CHECK( mdns_init() );
+	ESP_ERROR_CHECK( mdns_hostname_set("ICE-V") );
+	ESP_ERROR_CHECK( mdns_instance_name_set("ESP32C3 + FPGA") );
+    ESP_ERROR_CHECK( mdns_service_add(NULL, "_FPGA", "_tcp", 3333, NULL, 0)  );
 	
 	/* whatever else you want running on top of WiFi */
 	xTaskCreate(socket_task, "socket", 4096, (void*)AF_INET, 5, NULL);

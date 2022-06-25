@@ -6,23 +6,25 @@ communicate with the ICE-V Wireless board over WiFi.
 The script uses python modules that should be available with most common installs
 so it should run "out of the box" with no special effort.
 
-## Provisioning
-The script assumes a default IP address for the ICE-V Wireless board of
+## Addressing
+The ICE-V default firmware uses mDNS to advertise its IP address and a special
+"_FPGA" service on port 3333 so the script assumes a default IP address for the
+ICE-V Wireless board of:
 
 ```
-192.168.0.132
+ICE-V.local
 ```
 
-This will probably not match the DHCP address that your router assigns to the
-board when it attaches to the network so you'll either need to provide the
+If your system doesn't support mDNS then you'll need to query your DHCP server to
+find the IP address that it assigned to the ICE-V and subsequently provide the
 proper address at every invocation of the script with the `--address=<IP>` option
-or modify the script to use your address.
+or modify the script to use that address.
 
 ## Usage
 ```
 send_c3sock.py [options] [<file>] | [DATA]
   -h, --help              : this message
-  -a, --address=ip_addr   : address of ESP32C3 (default 192.168.0.132)
+  -a, --address=ip_addr   : address of ESP32C3 (default ICE-V.local)
   -b, --battery           : report battery voltage (in millivolts)
   -f, --flash <file>      : write <file> to SPIFFS flash
   -p, --port=portnum      : port of FPGA load (default 3333)

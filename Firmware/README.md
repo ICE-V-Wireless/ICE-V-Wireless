@@ -1,8 +1,8 @@
 # Firmware
 This directory contains the ESP32 C3 firmware for the ESP32C3 FPGA board. The
 default firmware supports power-on initialization of the ICE40UP5k FPGA as well
-as wireless programming of the FPGA, SPI access after configuration and battery
-voltage monitoring.
+as wireless programming of the FPGA, SPI access after configuration, PSRAM access
+and battery voltage monitoring.
 
 ## Prerequisites
 Prior to building this firmware you'll need to have a working installation of the
@@ -64,3 +64,44 @@ idf.py -p <serial device> monitor
 ```
   
 to view this information.
+
+## Operation
+Once the firmware is running and connected to a WiFi network it creates a TCP
+socket on port 3333 which can be accessed without any security measures by any
+peer on the network. The socket accepts commands of the form
+
+```
+[Header][Size][Data]
+```
+* Header is a 32-bit value of 0xCAFEBEEX where X is any 4-bit value from 0-15
+that defines how the following data will be interpreted.
+  * 0 = SPI Read Register where Data consists of one byte containing the 7-bit
+register address to read. An error status byte followed by four bytes containing
+the 32-bit register contents is returned on the same socket.
+  * 1 = SPI Write Register where Data consists of one byte containing the 7-bit
+register address to write followed by four bytes containing the 32-bit value to
+write. An error status byte is returned on the same socket.
+  * 2 = Vbat report which requires no Data. An error status byte, followed by two
+bytes containing the battery voltage in millivolts is returned on the same socket.
+  * 11 = Read PSRAM where Data consists of four bytes defining the starting
+address in PSRAM at which to begin reading, followed by the number of bytes to
+read. An error status byte, followed by the requested read data is returned on
+the same socket.
+  * 12 =  Write PSRAM where Data consists of four bytes defining the starting
+address in PSRAM at which to write followed by the actual write data. An error
+status byte is returned on the same socket
+  * 14 = Write FPGA default power-on bitstream to SPIFFS where Data consists of
+the 104090-byte FPGA configuration bitstream. An error status byte is returned
+on the same socket.
+  * 15 = Write FPGA live bitstream directly to the FPGA where Data consists of
+the 104090-byte FPGA configuration bitstream. An error status byte is returned
+on the same socket.
+  * All other command values are reserved for future use.
+* Size is a 32-bit value definining the number of bytes following, excluding the
+header and size values.
+* Data is a stream of bytes of length Size.
+
+## Usage
+A Python script `send_c3sock.py` is provided which presents a user-friendly
+command line interface to the TCP socket and is described in more detail here:
+[python utility](../python/README.md)

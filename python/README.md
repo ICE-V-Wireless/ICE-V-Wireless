@@ -1,13 +1,13 @@
 # Python
 This directory contains the host-side Python utility script which is used to
-communicate with the ESP32C3 FPGA board over WiFi.
+communicate with the ICE-V Wireless board over WiFi.
 
 ## Installation
 The script uses python modules that should be available with most common installs
 so it should run "out of the box" with no special effort.
 
 ## Provisioning
-The script assumes a default IP address for the ESP32C3 FPGA board of
+The script assumes a default IP address for the ICE-V Wireless board of
 
 ```
 192.168.0.132
@@ -21,14 +21,15 @@ or modify the script to use your address.
 ## Usage
 ```
 send_c3sock.py [options] [<file>] | [DATA]
-  -h, --help            : this message
-  -a, --address=ip_addr : address of ESP32C3 (default 192.168.0.132)
-  -b, --battery         : report battery voltage (in millivolts)
-  -c, --command=[0-15]  : command (default 15 = load FPGA with <file>)
-  -f, --flash           : write <file> to SPIFFS flash
-  -p, --port=portnum    : port of FPGA load (default 3333)
-  -r, --read=REG        : register to read
-  -w, --write=REG DATA  : register to write and data to write
+  -h, --help              : this message
+  -a, --address=ip_addr   : address of ESP32C3 (default 192.168.0.132)
+  -b, --battery           : report battery voltage (in millivolts)
+  -f, --flash <file>      : write <file> to SPIFFS flash
+  -p, --port=portnum      : port of FPGA load (default 3333)
+  -r, --read=REG          : register to read
+  -w, --write=REG DATA    : register to write and data to write
+      --ps_rd=ADDR LEN    : read PSRAM at ADDR for LEN to stdout")
+      --ps_wr=ADDR <file> : write PSRAM at ADDR with data in <file>")
 ```
 
 ### Fast FPGA programming
@@ -66,3 +67,25 @@ If the current FPGA design supports SPI CSRs, write a register
 send_c3sock.py --write=<REG> <DATA>
 ```
 
+### Read PSRAM
+Reads from the 8MB PSRAM on the board starting at address ADDR for LEN bytes.
+Output is sent to stdout so be sure to redirect to a file or pipe that can
+handle the raw binary data. At this time LEN is maximum 65536 bytes.
+
+Note that you must have an FPGA design that supports SPI pass-thru to the PSRAM.
+A simple example design is available in the Gateware/spi_pass directory.
+
+```
+send_c3sock.py --ps_rd=ADDR LEN > <READ FILE>
+```
+
+### Write PSRAM
+Writes data from <file> to the 8MB PSRAM on the board starting at address ADDR.
+At this time file length is maximum 65536 bytes.
+
+Note that you must have an FPGA design that supports SPI pass-thru to the PSRAM.
+A simple example design is available in the Gateware/spi_pass directory.
+
+```
+send_c3sock.py --ps_wr=ADDR <file>
+```

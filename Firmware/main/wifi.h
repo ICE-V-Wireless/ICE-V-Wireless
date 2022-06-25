@@ -1,5 +1,5 @@
 /*
- * wifi.c - part of lp4k_c3. Adds TCP socket for updating FPGA bitstream
+ * wifi.c - part of esp32c3_fpga. Set up pre-provisioned WiFi networking.
  * 04-06-22 E. Brombaugh
  */
 
@@ -9,5 +9,6 @@
 #include "main.h"
 
 esp_err_t wifi_init(void);
+int8_t wifi_get_rssi(void);
 
 #endif

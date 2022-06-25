@@ -1,6 +1,6 @@
 /*
  * main.c - top level
- * part of lp4k_c3
+ * part of ICE-V Wireless firmware
  * 04-04-22 E. Brombaugh
 */
 
@@ -14,7 +14,7 @@
 
 #define LED_PIN 10
 
-static const char* TAG = "esp32c3_fpga";
+static const char* TAG = "main";
 
 /* build version in simple format */
 const char *fwVersionStr = "V0.1";
@@ -28,7 +28,7 @@ void app_main(void)
 {
 	/* Startup */
     ESP_LOGI(TAG, "-----------------------------");
-    ESP_LOGI(TAG, "ESP32C3/FPGA starting...");
+    ESP_LOGI(TAG, "ICE-V Wireless starting...");
     ESP_LOGI(TAG, "Version: %s", fwVersionStr);
     ESP_LOGI(TAG, "Build Date: %s", bdate);
     ESP_LOGI(TAG, "Build Time: %s", btime);
@@ -84,10 +84,18 @@ void app_main(void)
 	uint8_t i = 0;
 	while(1)
 	{
-		gpio_set_level(LED_PIN, i);
+		gpio_set_level(LED_PIN, i&1);
 		//printf("%d\n", i);
-		printf("Vbat = %d mV\n", 2*adc_c3_get());
-		i^=1;
+		//printf("Vbat = %d mV\n", 2*adc_c3_get());
+		
+		if((i&15)==0)
+		{
+			ESP_LOGI(TAG, "free heap: %d",esp_get_free_heap_size());
+			ESP_LOGI(TAG, "RSSI: %d", wifi_get_rssi());
+		}
+		
+		i++;
+		
 		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }

@@ -57,7 +57,7 @@ void ICE_Init(void)
     ret=spi_bus_initialize(ICE_SPI_HOST, &buscfg, SPI_DMA_CH_AUTO);
     ESP_ERROR_CHECK(ret);
 	
-    //Attach the LCD to the SPI bus
+    //Attach the SPI bus
     ret=spi_bus_add_device(ICE_SPI_HOST, &devcfg, &spi);
     ESP_ERROR_CHECK(ret);
 
@@ -132,6 +132,31 @@ void ICE_SPI_WriteBlk(uint8_t *Data, uint32_t Count)
 		memset(&t, 0, sizeof(spi_transaction_t));
 		t.length=8*bytes;	
 		t.tx_buffer=Data;               //The data is the cmd itself
+		ret=spi_device_polling_transmit(spi, &t);  //Transmit!
+		assert(ret==ESP_OK);            //Should have had no issues.
+		
+		Count -= bytes;
+		Data += bytes;
+	}
+}
+
+/*
+ * Read a block of bytes from the ICE SPI
+ */
+void ICE_SPI_ReadBlk(uint8_t *Data, uint32_t Count)
+{
+    esp_err_t ret;
+    spi_transaction_t t = {0};
+	uint32_t bytes;
+	
+	while(Count)
+	{
+		bytes = (Count > ICE_SPI_MAX_XFER) ? ICE_SPI_MAX_XFER : Count;
+		
+		memset(&t, 0, sizeof(spi_transaction_t));
+		t.length=8*bytes;
+		t.rxlength = t.length;
+		t.rx_buffer = Data;
 		ret=spi_device_polling_transmit(spi, &t);  //Transmit!
 		assert(ret==ESP_OK);            //Should have had no issues.
 		
@@ -272,3 +297,58 @@ void ICE_FPGA_Serial_Read(uint8_t Reg, uint32_t *Data)
 	ICE_SPI_CS_HIGH();
 }
 
+/***********************************************************************/
+/* I know that ESP32 SPI ports can do memory cmd/addr/data sequencing  */
+/* but I'm handling it manually here to avoid constantly reconfiguring */
+/***********************************************************************/
+/*
+ * Write a block of data to the FPGA attached PSRAM via SPI port
+ */
+void ICE_PSRAM_Write(uint32_t Addr, uint8_t *Data, uint32_t size)
+{
+	uint8_t header[4];
+	
+	/* build the PSRAM Write header */
+	header[0] = 0x02;					// slow write command
+	header[1] = (Addr >> 16) & 0xff;
+	header[2] = (Addr >>  8) & 0xff;
+	header[3] = (Addr >>  0) & 0xff;
+	
+	/* Drop CS */
+	ICE_SPI_CS_LOW();
+	
+	/* send header */
+	ICE_SPI_WriteBlk(header, 4);
+	
+	/* send data */
+	ICE_SPI_WriteBlk(Data, size);
+	
+	/* Raise CS */
+	ICE_SPI_CS_HIGH();	
+}
+
+/*
+ * Read a block of data from the FPGA attached PSRAM via SPI port
+ */
+void ICE_PSRAM_Read(uint32_t Addr, uint8_t *Data, uint32_t size)
+{
+	uint8_t header[4];
+	
+	/* build the PSRAM Read header */
+	header[0] = 0x03;					// slow read command
+	header[1] = (Addr >> 16) & 0xff;
+	header[2] = (Addr >>  8) & 0xff;
+	header[3] = (Addr >>  0) & 0xff;
+	
+	/* Drop CS */
+	ICE_SPI_CS_LOW();
+	
+	/* send header */
+	ICE_SPI_WriteBlk(header, 4);
+	
+	/* get data */
+	ICE_SPI_ReadBlk(Data, size);
+	
+	/* Raise CS */
+	ICE_SPI_CS_HIGH();
+}

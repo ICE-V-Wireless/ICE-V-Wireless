@@ -41,7 +41,7 @@ void main()
 	psram_init(SPI0);
 	printf("PSRAM initialized: ID = 0x%04X\n\r", psram_id(SPI0));
 
-#if 0
+#if 1
 	/* RAM test */
 	uint8_t buffer[16];
 	printf("Raw buffer\n\r");
@@ -100,7 +100,7 @@ void main()
 	prt_blk(buffer, 16);
 #endif
 
-#if 1
+#if 0
 	/* test mailbox output */
 	//printf("Test Mailbox:\n\r");
 	for(uint8_t i=0;i<32;i++)
@@ -119,6 +119,6 @@ void main()
 		gp_out1 = cnt&0x10 ? 0xabadcafe : 0xdeadbeef;
 		printf("cnt = %d\n\r", cnt);
 		cnt++;
-		clkcnt_delayms(100);
+		clkcnt_delayms(1000);
 	}
 }

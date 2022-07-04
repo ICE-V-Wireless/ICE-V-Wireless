@@ -149,7 +149,7 @@ def usage():
 # main entry
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "ha:bp:r:w:", ["help", "address=", "battery", "port=", "read=", "write=","ps_rd=", "ps_wr="])
+        opts, args = getopt.getopt(sys.argv[1:], "ha:bfp:r:w:", ["help", "address=", "battery", "flash", "port=", "read=", "write=","ps_rd=", "ps_wr="])
     except getopt.GetoptError as err:
         # print help information and exit:
         print(err)  # will print something like "option -a not recognized"
@@ -171,6 +171,8 @@ if __name__ == "__main__":
             addr = a
         elif o in ("-b", "--battery"):
             cmmd = 2
+        elif o in ("-f", "--flash"):
+            cmmd = 14
         elif o in ("-p", "--port"):
             port = int(a)
         elif o in ("-r", "--read"):

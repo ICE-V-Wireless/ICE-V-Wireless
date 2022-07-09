@@ -130,7 +130,7 @@ module bitstream(
 	begin
 		if(reset)
 		begin
-			per <= 8'h8;
+			per <= 8'h4;
 		end
 		else if(we)
 		begin
@@ -181,7 +181,7 @@ module bitstream(
 	assign mbx_winc = mbx_diag[1];
 	
 	// RISC-V CPU based serial I/O
-	wire [31:0] state;
+	wire [7:0] red, grn, blu;
 	system u_riscv(
 		.clk24(clk24),
 		.reset(reset24),
@@ -195,7 +195,7 @@ module bitstream(
 		.gp_in1(gpio_torisc),
 		.gp_in2(32'h0),
 		.gp_in3(32'h0),
-		.gp_out0(state),
+		.gp_out0({red,grn,blu}),
 		.gp_out1(gpio_fromrisc),
 		.gp_out2(),
 		.gp_out3(),
@@ -213,8 +213,8 @@ module bitstream(
 	//------------------------------
 	// PWM dimming for the RGB DRV 
 	//------------------------------
-	reg [7:0] pwm_cnt;
-	reg led_ena;
+	reg [11:0] pwm_cnt;
+	reg led_ena, r_pwm, g_pwm, b_pwm;
 	always @(posedge clk)
 		if(reset)
 		begin
@@ -224,7 +224,10 @@ module bitstream(
 		else
 		begin
 			pwm_cnt <= pwm_cnt + 1;
-			led_ena <= pwm_cnt < per;
+			led_ena <= pwm_cnt[3:0] <= per;
+			r_pwm <= pwm_cnt[11:4] < red;
+			g_pwm <= pwm_cnt[11:4] < grn;
+			b_pwm <= pwm_cnt[11:4] < blu;
 		end
 	
 	//------------------------------
@@ -238,9 +241,9 @@ module bitstream(
 	) RGBA_DRIVER (
 		.CURREN(1'b1),
 		.RGBLEDEN(led_ena),
-		.RGB0PWM(state[0]),
-		.RGB1PWM(state[1]),
-		.RGB2PWM(state[2]),
+		.RGB0PWM(r_pwm),
+		.RGB1PWM(g_pwm),
+		.RGB2PWM(b_pwm),
 		.RGB0(RGB0),
 		.RGB1(RGB1),
 		.RGB2(RGB2)

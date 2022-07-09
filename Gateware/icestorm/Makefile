@@ -5,7 +5,7 @@
 # src directory
 VPATH = ../src ../riscv/src
 
-SRC =	../src/up5k_esp32c3.v ../src/spi_slave.v \
+SRC =	../src/bitstream.v ../src/spi_slave.v \
 		../riscv/src/system.v ../riscv/src/picorv32.v \
 		../riscv/src/spram_16kx32.v \
 		../riscv/src/acia.v ../riscv/src/acia_tx.v ../riscv/src/acia_rx.v \
@@ -17,9 +17,9 @@ FAKE_HEX =	rom.hex
 REAL_HEX =  code.hex
 
 # project stuff
-PROJ = up5k_esp32c3
-PIN_DEF = ../src/up5k_esp32c3.pcf
-SDC = ../src/up5k_esp32c3.sdc
+PROJ = bitstream
+PIN_DEF = ../src/bitstream.pcf
+SDC = ../src/bitstream.sdc
 DEVICE = up5k
 PACKAGE = sg48
 

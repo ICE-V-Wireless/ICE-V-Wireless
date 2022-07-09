@@ -1,6 +1,7 @@
 # Gateware
 This directory contains source and build materials necessary to create the FPGA
-bitstream for a demonstration gateware compatible with the ESP32C3 FPGA design.
+bitstream for a demonstration gateware compatible with the ICE-V Wireless FPGA
+design.
 
 ## Prerequisites
 You will need the Open Source FPGA toolchain to build this. You can download it
@@ -22,7 +23,7 @@ simply rerun make to complete the binary creation.
 
 ## Installing
 
-The result of the 'make' process above should be a binary entitled 'up5k_esp32c3.bin'
+The result of the 'make' process above should be a binary entitled 'bitstream.bin'
 which may be installed using 'make prog'. Note that this process depends on
 the python host utility being in the Python directory of this repo and that it has
 been modified to use the proper local network address for your board.

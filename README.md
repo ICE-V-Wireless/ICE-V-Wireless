@@ -1,7 +1,3 @@
-# Notice
-Repository moved to an org for easier collaboration.
-https://github.com/ICE-V-Wireless
-
 # ICE-V Wireless
 Combined ESP32C3 and iCE40 FPGA board
 

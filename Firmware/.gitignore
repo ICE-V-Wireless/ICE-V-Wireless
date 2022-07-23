@@ -1,2 +1,5 @@
 # don't track this as it has private stuff. Use the template instead
 main/credentials.h
+
+# never add the build dir
+build

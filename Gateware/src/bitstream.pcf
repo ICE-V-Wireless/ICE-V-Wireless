@@ -1,0 +1,67 @@
+###############################################################################
+# ICE-V Wireless PCF file
+###############################################################################
+
+# RGB LED
+set_io RGB0 39
+set_io RGB1 40
+set_io RGB2 41
+
+# ESP32C3 SPI interface
+set_io SPI_MISO 14
+set_io SPI_SCLK 15
+set_io SPI_CSL 16
+set_io SPI_MOSI 17
+
+# External 12MHz clock oscillator
+set_io clk_12MHz 35
+
+# Diagnostics for default design
+set_io clk24 13
+set_io reset24 20
+set_io diag 32
+set_io mbx_rinc 31
+set_io mbx_winc 43
+
+# Serial I/O for RISC-V soft core in default design
+set_io rx 46
+set_io tx 42
+
+# SPI interface to PSRAM in default design
+set_io spi0_miso 23
+set_io spi0_sclk 28
+set_io spi0_cs0 37
+set_io spi0_mosi 26
+set_io spi0_nwp 25
+set_io spi0_nhld 27
+
+# PMODs
+set_io PMOD1_1 19
+set_io PMOD1_2 18
+set_io PMOD1_3 12
+set_io PMOD1_4 21
+set_io PMOD1_5 11
+set_io PMOD1_6 10
+set_io PMOD1_7 9
+set_io PMOD1_8 6
+
+set_io PMOD2_1 4
+set_io PMOD2_2 3
+set_io PMOD2_3 48
+set_io PMOD2_4 45
+set_io PMOD2_5 47
+set_io PMOD2_6 44
+set_io PMOD2_7 46
+set_io PMOD2_8 2
+
+set_io PMOD3_1 42
+set_io PMOD3_2 38
+set_io PMOD3_3 43
+set_io PMOD3_4 36
+set_io PMOD3_5 32
+set_io PMOD3_6 31
+set_io PMOD3_7 13
+set_io PMOD3_8 20
+
+# Spare
+set_io J3-11 34

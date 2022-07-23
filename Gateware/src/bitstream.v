@@ -1,11 +1,11 @@
-// lattice up5k R G B blinky
+// Default Bitstream design for ICE-V Wireless FPGA
 // 03-14-19 E. Brombaugh
 
 `default_nettype none
 
 `define DIV 14'd9999
 
-module up5k_esp32c3(
+module bitstream(
 	// 12MHz external osc
 	input clk_12MHz,
 	
@@ -38,7 +38,7 @@ module up5k_esp32c3(
 	input SPI_SCLK
 );
 	// This should be unique so firmware knows who it's talking to
-	parameter DESIGN_ID = 32'hB00F0000;
+	parameter DESIGN_ID = 32'hB00F0001;
 
 	//------------------------------
 	// Clock PLL
@@ -124,13 +124,13 @@ module up5k_esp32c3(
 	//------------------------------
 	// Writeable registers
 	//------------------------------
-	reg [13:0] per;
+	reg [7:0] per;
 	reg [31:0] gpio_torisc;
 	always @(posedge clk)
 	begin
 		if(reset)
 		begin
-			per <= 14'h1;
+			per <= 8'h4;
 		end
 		else if(we)
 		begin
@@ -180,49 +180,8 @@ module up5k_esp32c3(
 	assign mbx_rinc = mbx_diag[0];
 	assign mbx_winc = mbx_diag[1];
 	
-//`define NORISC
-`ifdef NORISC
-	//------------------------------
-	// Instantiate LF Osc
-	//------------------------------
-	wire CLKLF;
-	SB_LFOSC OSCInst1 (
-		.CLKLFEN(1'b1),
-		.CLKLFPU(1'b1),
-		.CLKLF(CLKLF)
-	);
-	
-	//------------------------------
-	// Divide the clock
-	//------------------------------
-	reg [13:0] clkdiv;
-	reg onepps;
-	always @(posedge CLKLF)
-	begin		
-		if(clkdiv >= `DIV)
-		begin
-			onepps <= 1'b1;
-			clkdiv <= 14'd0;
-		end
-		else
-		begin
-			onepps <= 1'b0;
-			clkdiv <= clkdiv + per;
-		end
-	end
-		
-	//------------------------------
-	// LED signals
-	//------------------------------
-	reg [2:0] state;
-	always @(posedge CLKLF)
-	begin
-		if(onepps)
-			state <= state + 3'd1;
-	end
-`else	
 	// RISC-V CPU based serial I/O
-	wire [31:0] state;
+	wire [7:0] red, grn, blu;
 	system u_riscv(
 		.clk24(clk24),
 		.reset(reset24),
@@ -236,7 +195,7 @@ module up5k_esp32c3(
 		.gp_in1(gpio_torisc),
 		.gp_in2(32'h0),
 		.gp_in3(32'h0),
-		.gp_out0(state),
+		.gp_out0({red,grn,blu}),
 		.gp_out1(gpio_fromrisc),
 		.gp_out2(),
 		.gp_out3(),
@@ -250,8 +209,27 @@ module up5k_esp32c3(
 	);
 	assign spi0_nwp = 1'b1;
 	assign spi0_nhld = 1'b1;
-`endif
 
+	//------------------------------
+	// PWM dimming for the RGB DRV 
+	//------------------------------
+	reg [11:0] pwm_cnt;
+	reg led_ena, r_pwm, g_pwm, b_pwm;
+	always @(posedge clk)
+		if(reset)
+		begin
+			pwm_cnt <= 8'd0;
+			led_ena <= 1'b1;
+		end
+		else
+		begin
+			pwm_cnt <= pwm_cnt + 1;
+			led_ena <= pwm_cnt[3:0] <= per;
+			r_pwm <= pwm_cnt[11:4] < red;
+			g_pwm <= pwm_cnt[11:4] < grn;
+			b_pwm <= pwm_cnt[11:4] < blu;
+		end
+	
 	//------------------------------
 	// Instantiate RGB DRV 
 	//------------------------------
@@ -262,10 +240,10 @@ module up5k_esp32c3(
 		.RGB2_CURRENT("0b000001")
 	) RGBA_DRIVER (
 		.CURREN(1'b1),
-		.RGBLEDEN(1'b1),
-		.RGB0PWM(state[0]),
-		.RGB1PWM(state[1]),
-		.RGB2PWM(state[2]),
+		.RGBLEDEN(led_ena),
+		.RGB0PWM(r_pwm),
+		.RGB1PWM(g_pwm),
+		.RGB2PWM(b_pwm),
 		.RGB0(RGB0),
 		.RGB1(RGB1),
 		.RGB2(RGB2)

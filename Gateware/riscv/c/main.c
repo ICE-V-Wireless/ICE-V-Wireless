@@ -100,7 +100,7 @@ void main()
 	prt_blk(buffer, 16);
 #endif
 
-#if 1
+#if 0
 	/* test mailbox output */
 	//printf("Test Mailbox:\n\r");
 	for(uint8_t i=0;i<32;i++)
@@ -115,10 +115,30 @@ void main()
 	printf("Looping...\n\r");
 	while(1)
 	{		
+#if 0
 		gp_out0 = cnt&7;
 		gp_out1 = cnt&0x10 ? 0xabadcafe : 0xdeadbeef;
 		printf("cnt = %d\n\r", cnt);
 		cnt++;
-		clkcnt_delayms(100);
+		clkcnt_delayms(1000);
+#else
+		switch((cnt>>8)&3)
+		{
+			case 0: //grn->red
+				gp_out0 = ((cnt&0xff)<<16) | (((~cnt)&0xff)<<8);
+				break;
+			case 1: //red->blue
+				gp_out0 = ((cnt&0xff)) | (((~cnt)&0xff)<<16);
+				break;
+			case 2: //blue->green
+				gp_out0 = ((cnt&0xff)<<8) | (((~cnt)&0xff));
+				break;
+			default:
+				gp_out0 = 0;
+		}
+		cnt++;
+		cnt = cnt>767 ? 0 : cnt;
+		clkcnt_delayms(4);
+#endif
 	}
 }

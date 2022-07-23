@@ -133,13 +133,13 @@ module wb_bus(
 		.IO_STANDARD("SB_LVCMOS")
 	) umiso_0 (
 		.PACKAGE_PIN(spi0_miso),
-		.LATCH_INPUT_VALUE(1'b0),
-		.CLOCK_ENABLE(1'b0),
-		.INPUT_CLK(1'b0),
-		.OUTPUT_CLK(1'b0),
+		.LATCH_INPUT_VALUE(),
+		.CLOCK_ENABLE(),
+		.INPUT_CLK(),
+		.OUTPUT_CLK(),
 		.OUTPUT_ENABLE(soe_0),
 		.D_OUT_0(so_0),
-		.D_OUT_1(1'b0),
+		.D_OUT_1(),
 		.D_IN_0(mi_0),
 		.D_IN_1()
 	);
@@ -152,13 +152,13 @@ module wb_bus(
 		.IO_STANDARD("SB_LVCMOS")
 	) usclk_0 (
 		.PACKAGE_PIN(spi0_sclk),
-		.LATCH_INPUT_VALUE(1'b0),
-		.CLOCK_ENABLE(1'b0),
-		.INPUT_CLK(1'b0),
-		.OUTPUT_CLK(1'b0),
+		.LATCH_INPUT_VALUE(),
+		.CLOCK_ENABLE(),
+		.INPUT_CLK(),
+		.OUTPUT_CLK(),
 		.OUTPUT_ENABLE(sckoe_0),
 		.D_OUT_0(scko_0),
-		.D_OUT_1(1'b0),
+		.D_OUT_1(),
 		.D_IN_0(scki_0),
 		.D_IN_1()
 	);
@@ -171,14 +171,14 @@ module wb_bus(
 		.IO_STANDARD("SB_LVCMOS")
 	) ucs0_0 (
 		.PACKAGE_PIN(spi0_cs0),
-		.LATCH_INPUT_VALUE(1'b0),
-		.CLOCK_ENABLE(1'b0),
-		.INPUT_CLK(1'b0),
-		.OUTPUT_CLK(1'b0),
+		.LATCH_INPUT_VALUE(),
+		.CLOCK_ENABLE(),
+		.INPUT_CLK(),
+		.OUTPUT_CLK(),
 		.OUTPUT_ENABLE(1'b1),	// or mcsnoe_00 for hi-z when inactive
 		.D_OUT_0(mcsno_00),
-		.D_OUT_1(1'b0),
-		.D_IN_0(scsni_0),		// unused to prevent accidental slave mode
+		.D_OUT_1(),
+		.D_IN_0(),		// unused to prevent accidental slave mode
 		.D_IN_1()
 	);
 	
@@ -252,13 +252,13 @@ module wb_bus(
 		.IO_STANDARD("SB_LVCMOS")
 	) umosi_1 (
 		.PACKAGE_PIN(spi1_mosi),
-		.LATCH_INPUT_VALUE(1'b0),
-		.CLOCK_ENABLE(1'b0),
-		.INPUT_CLK(1'b0),
-		.OUTPUT_CLK(1'b0),
+		.LATCH_INPUT_VALUE(),
+		.CLOCK_ENABLE(),
+		.INPUT_CLK(),
+		.OUTPUT_CLK(),
 		.OUTPUT_ENABLE(moe_1),
 		.D_OUT_0(mo_1),
-		.D_OUT_1(1'b0),
+		.D_OUT_1(),
 		.D_IN_0(si_1),
 		.D_IN_1()
 	);
@@ -271,13 +271,13 @@ module wb_bus(
 		.IO_STANDARD("SB_LVCMOS")
 	) umiso_1 (
 		.PACKAGE_PIN(spi1_miso),
-		.LATCH_INPUT_VALUE(1'b0),
-		.CLOCK_ENABLE(1'b0),
-		.INPUT_CLK(1'b0),
-		.OUTPUT_CLK(1'b0),
+		.LATCH_INPUT_VALUE(),
+		.CLOCK_ENABLE(),
+		.INPUT_CLK(),
+		.OUTPUT_CLK(),
 		.OUTPUT_ENABLE(soe_1),
 		.D_OUT_0(so_1),
-		.D_OUT_1(1'b0),
+		.D_OUT_1(),
 		.D_IN_0(mi_1),
 		.D_IN_1()
 	);
@@ -290,13 +290,13 @@ module wb_bus(
 		.IO_STANDARD("SB_LVCMOS")
 	) usclk_1 (
 		.PACKAGE_PIN(spi1_sclk),
-		.LATCH_INPUT_VALUE(1'b0),
-		.CLOCK_ENABLE(1'b0),
-		.INPUT_CLK(1'b0),
-		.OUTPUT_CLK(1'b0),
+		.LATCH_INPUT_VALUE(),
+		.CLOCK_ENABLE(),
+		.INPUT_CLK(),
+		.OUTPUT_CLK(),
 		.OUTPUT_ENABLE(sckoe_1),
 		.D_OUT_0(scko_1),
-		.D_OUT_1(1'b0),
+		.D_OUT_1(),
 		.D_IN_0(scki_1),
 		.D_IN_1()
 	);
@@ -309,14 +309,14 @@ module wb_bus(
 		.IO_STANDARD("SB_LVCMOS")
 	) ucs0_1 (
 		.PACKAGE_PIN(spi1_cs0),
-		.LATCH_INPUT_VALUE(1'b0),
-		.CLOCK_ENABLE(1'b0),
-		.INPUT_CLK(1'b0),
-		.OUTPUT_CLK(1'b0),
+		.LATCH_INPUT_VALUE(),
+		.CLOCK_ENABLE(),
+		.INPUT_CLK(),
+		.OUTPUT_CLK(),
 		.OUTPUT_ENABLE(1'b1),	// or mcsnoe_00 for hi-z when inactive
 		.D_OUT_0(mcsno_01),
-		.D_OUT_1(1'b0),
-		.D_IN_0(scsni_1),		// unused to prevent accidental slave mode
+		.D_OUT_1(),
+		.D_IN_0(),		// unused to prevent accidental slave mode
 		.D_IN_1()
 	);
 	
@@ -376,13 +376,13 @@ module wb_bus(
 		.IO_STANDARD("SB_LVCMOS")
 	) usda (
 		.PACKAGE_PIN(i2c0_sda),
-		.LATCH_INPUT_VALUE(1'b0),
-		.CLOCK_ENABLE(1'b0),
-		.INPUT_CLK(1'b0),
-		.OUTPUT_CLK(1'b0),
+		.LATCH_INPUT_VALUE(),
+		.CLOCK_ENABLE(),
+		.INPUT_CLK(),
+		.OUTPUT_CLK(),
 		.OUTPUT_ENABLE(sda_oe_0),
 		.D_OUT_0(sda_o_0),
-		.D_OUT_1(1'b0),
+		.D_OUT_1(),
 		.D_IN_0(sda_i_0),
 		.D_IN_1()
 	);
@@ -395,13 +395,13 @@ module wb_bus(
 		.IO_STANDARD("SB_LVCMOS")
 	) uscl (
 		.PACKAGE_PIN(i2c0_scl),
-		.LATCH_INPUT_VALUE(1'b0),
-		.CLOCK_ENABLE(1'b0),
-		.INPUT_CLK(1'b0),
-		.OUTPUT_CLK(1'b0),
+		.LATCH_INPUT_VALUE(),
+		.CLOCK_ENABLE(),
+		.INPUT_CLK(),
+		.OUTPUT_CLK(),
 		.OUTPUT_ENABLE(scl_oe_0),
 		.D_OUT_0(scl_o_0),
-		.D_OUT_1(1'b0),
+		.D_OUT_1(),
 		.D_IN_0(scl_i_0),
 		.D_IN_1()
 	);

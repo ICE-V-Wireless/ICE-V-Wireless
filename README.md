@@ -48,7 +48,9 @@ The ESP32 firmware is written in C with the ESP-IDF V5.0 toolchain and
 libraries. Initially it provides a TCP socket interface over WiFi with the
 following features:
 * Initial loading of the FPGA configuration at powerup from a SPIFFS filesystem
-contained in the ESP32C3HN4 flash.
+contained in the ESP32C3F[H/N]4 flash. 
+<br/>(See [Page 9 of the ESP32-C3 Series Datasheet](https://www.espressif.com/sites/default/files/documentation/esp32-c3_datasheet_en.pdf#page=9)
+for part number details).
 * WiFi socket-based "instant" loading of configurations direct to the FPGA.
 * WiFi socket-based updating of the configuration stored in SPIFFS.
 * WiFi socket-based monitor/control of the FPGA design via SPI.

@@ -35,6 +35,13 @@ module spi_pass(
 	assign spi0_nhld = 1'b1;
 	
 	//------------------------------
+	// RGB off
+	//------------------------------
+	assign RGB0 = 1'b1;
+	assign RGB1 = 1'b1;
+	assign RGB2 = 1'b1;
+	
+	//------------------------------
 	// everything else is default
 	//------------------------------
 endmodule

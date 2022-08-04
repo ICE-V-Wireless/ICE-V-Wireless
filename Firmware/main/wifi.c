@@ -26,7 +26,7 @@ static const char *TAG = "wifi";
 /* Basic WiFi connection                                                      */
 /******************************************************************************/
 static int s_active_interfaces = 0;
-static xSemaphoreHandle s_semph_get_ip_addrs;
+static SemaphoreHandle_t s_semph_get_ip_addrs;
 static esp_netif_t *s_example_esp_netif = NULL;
 
 // there's an include for this but it doesn't define the function

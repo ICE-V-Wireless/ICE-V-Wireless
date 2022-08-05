@@ -19,6 +19,7 @@
 #include "credentials.h"
 #include "socket.h"
 #include "mdns.h"
+#include "esp_idf_version.h"
 
 static const char *TAG = "wifi";
 
@@ -31,7 +32,9 @@ static esp_netif_t *s_example_esp_netif = NULL;
 
 // there's an include for this but it doesn't define the function
 // if it doesn't think it needs it, so manually declare the function
-//extern void phy_bbpll_en_usb(bool en);
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 4, 2)
+extern void phy_bbpll_en_usb(bool en);
+#endif
 
 /* stuff that's usually in the menuconfig */
 #define CONFIG_EXAMPLE_WIFI_SCAN_RSSI_THRESHOLD -127

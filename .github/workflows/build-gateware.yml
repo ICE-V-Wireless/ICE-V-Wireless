@@ -1,0 +1,34 @@
+on: push
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
+
+    - name: Install RISC-V toolchain
+      shell: bash
+      run: |
+        wget https://static.dev.sifive.com/dev-tools/riscv64-unknown-elf-gcc-8.3.0-2019.08.0-x86_64-linux-ubuntu14.tar.gz
+        tar xpzf riscv64-unknown-elf-gcc-8.3.0-2019.08.0-x86_64-linux-ubuntu14.tar.gz
+        sudo chown -R 0:0 riscv64-unknown-elf-gcc-8.3.0-2019.08.0-x86_64-linux-ubuntu14
+        sudo mkdir /opt/riscv-gcc
+        sudo mv riscv64-unknown-elf-gcc-8.3.0-2019.08.0-x86_64-linux-ubuntu14 /opt/riscv-gcc
+
+    - name: Install FPGA toolchain
+      uses: YosysHQ/setup-oss-cad-suite@v1
+
+    - name: Build Gateware
+      working-directory: Gateware/icestorm
+      shell: bash
+      env:
+        TOOLS: ${{ runner.temp }}/.setup-oss-cad-suite/oss-cad-suite
+      run: |
+        make
+
+    # Probably good to export artifacts from build

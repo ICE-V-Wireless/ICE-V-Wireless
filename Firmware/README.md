@@ -20,6 +20,10 @@ https://github.com/espressif/esp-idf
 Make sure you get `stable (v4.4.2)` and that you've done all the proper
 installation and setup steps.
 
+NOTE: The github CI process for this repo uses a Docker image for esp-idf that's
+provided by Espressif and appears to contain a late version of V4.4.1 that
+does work but requires some preprocessor fiddling to get full function.
+
 ## Provisioning
 At this time the ESP32C3 FPGA firmware does not automatically handle WiFi
 provisioning so the SSID and password of the local WiFi router must be provided
@@ -69,7 +73,6 @@ debugging and tracking performance. Use the command
 ```
 idf.py -p <serial device> monitor
 ```
-  
 to view this information.
 
 ## IP Addressing

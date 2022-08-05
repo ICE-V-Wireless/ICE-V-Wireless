@@ -23,7 +23,7 @@ SDC = ../src/bitstream.sdc
 DEVICE = up5k
 PACKAGE = sg48
 
-TOOLS = /opt/openfpga/fpga-toolchain
+TOOLS ?= /opt/openfpga/fpga-toolchain
 YOSYS = $(TOOLS)/bin/yosys
 NEXTPNR = $(TOOLS)/bin/nextpnr-ice40
 NEXTPNR_ARGS = --pre-pack $(SDC) --package $(PACKAGE) --$(DEVICE)

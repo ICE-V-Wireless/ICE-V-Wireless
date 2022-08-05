@@ -30,9 +30,9 @@ static int s_active_interfaces = 0;
 static xSemaphoreHandle s_semph_get_ip_addrs;
 static esp_netif_t *s_example_esp_netif = NULL;
 
-// there's an include for this but it doesn't define the function
-// if it doesn't think it needs it, so manually declare the function
+
 #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 4, 2)
+// there's an include for this in V4.4.2 and beyond
 extern void phy_bbpll_en_usb(bool en);
 #endif
 

@@ -1,0 +1,31 @@
+on: push
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
+
+    - name: Prepaire SPIFFS
+      working-directory: Firmware
+      shell: bash
+      run: |
+        sed -i -e 's/#spiffs_create_partition_image/spiffs_create_partition_image/' main/CMakeLists.txt
+
+    - name: Create Fake Wifi Credentials
+      working-directory: Firmware
+      shell: bash
+      run: |
+        cp main/credentials_template.h main/credentials.h
+
+    - name: esp-idf build
+      uses: espressif/esp-idf-ci-action@v1
+      with:
+        esp_idf_version: v4.4
+        target: esp32c3
+        path: 'Firmware'

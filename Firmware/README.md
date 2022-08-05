@@ -5,13 +5,20 @@ as wireless programming of the FPGA, SPI access after configuration, PSRAM acces
 and battery voltage monitoring.
 
 ## Prerequisites
+
+### ESP32 Tools
 Prior to building this firmware you'll need to have a working installation of the
-Espressif ESP32 IDF V5.0 toolchain. You can find it here:
+Espressif ESP32 IDF toolchain. Unfortunately there are many different versions
+available and not all components and features used here are compatible across
+them all. This project was initially built against an intermediate release of
+unstable V5.0 that has been changing quickly and doesn't play nicely with some
+developers tools like VSCode so it's best to fall back to the V4.4.2 stable
+release. You can find it here:
 
 https://github.com/espressif/esp-idf
 
-Make sure you get V5.0 and that you've done all the proper installation and
-setup steps.
+Make sure you get `stable (v4.4.2)` and that you've done all the proper
+installation and setup steps.
 
 ## Provisioning
 At this time the ESP32C3 FPGA firmware does not automatically handle WiFi

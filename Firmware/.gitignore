@@ -3,7 +3,3 @@ main/credentials.h
 
 # never add the build dir
 build
-
-# don't archive the components stuff - that's in the config file
-managed_components
-dependencies.lock

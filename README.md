@@ -40,6 +40,9 @@ line, along with power, ground and reset connections.
 <img src="docs/pinout.png" width="640" />
 
 ## Firmware
+
+[![.github/workflows/build-firmware.yml](https://github.com/ICE-V-Wireless/ICE-V-Wireless/actions/workflows/build-firmware.yml/badge.svg)](https://github.com/ICE-V-Wireless/ICE-V-Wireless/actions/workflows/build-firmware.yml)
+
 The ESP32 firmware is written in C with the ESP-IDF V5.0 toolchain and
 libraries. Initially it provides a TCP socket interface over WiFi with the
 following features:
@@ -53,6 +56,9 @@ for part number details).
 * WiFi socket-based monitor of LiPo battery voltage (requires added solder blob).
 
 ## Gateware
+
+[![.github/workflows/build-gateware.yml](https://github.com/ICE-V-Wireless/ICE-V-Wireless/actions/workflows/build-gateware.yml/badge.svg)](https://github.com/ICE-V-Wireless/ICE-V-Wireless/actions/workflows/build-gateware.yml)
+
 The iCE40 FPGA gateware provided is a simple design that demonstrates basic
 SPI monitor/control via SPI with a flashing LED. More advanced designs are
 possible.

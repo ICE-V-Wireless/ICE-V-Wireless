@@ -211,9 +211,7 @@ static void do_getmsg(const int sock)
 							cmd = header.words[0] & 0xF;
 							txsz = header.words[1];
 							ESP_LOGI(TAG, "State 0: Found header: cmd %1X, txsz = %d", cmd, txsz);
-							
-							ESP_LOGI(TAG, "State 0: expanding size by 20 bytes for tail");
-                            
+							                            
 							/* allocate a buffer for the data */
 							filebuffer = malloc(txsz);
 							if(filebuffer)

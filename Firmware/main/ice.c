@@ -8,6 +8,9 @@
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
 #include "rom/ets_sys.h"
+#include "soc/spi_periph.h"
+#include "esp_rom_gpio.h"
+#include "hal/gpio_hal.h"
 
 /**
   * @brief  SPI Interface pins
@@ -166,8 +169,31 @@ void ICE_SPI_ReadBlk(uint8_t *Data, uint32_t Count)
 }
 
 /*
+ * Bitbang the SPI_SCK - used for new timing config
+ */
+void ICE_SPI_ClkToggle(uint32_t cycles)
+{
+	/* configure SCK pin for GPIO output */
+    esp_rom_gpio_pad_select_gpio(ICE_SPI_SCK_PIN);
+	gpio_set_direction(ICE_SPI_SCK_PIN, GPIO_MODE_OUTPUT);
+	
+	/* toggle for cycles */
+	while(cycles--)
+	{
+		gpio_set_level(ICE_SPI_SCK_PIN, 1);
+		gpio_set_level(ICE_SPI_SCK_PIN, 0);
+	}
+	
+	/* restore SCK pin to SPI control */
+    esp_rom_gpio_connect_out_signal(ICE_SPI_SCK_PIN, spi_periph_signal[ICE_SPI_HOST].spiclk_out, false, false);
+    esp_rom_gpio_connect_in_signal(ICE_SPI_SCK_PIN, spi_periph_signal[ICE_SPI_HOST].spiclk_in, false);
+}
+
+/*
  * configure the FPGA
  */
+#if 0
+/* original version - not quite to the Lattice timing spec */
 uint8_t ICE_FPGA_Config(uint8_t *bitmap, uint32_t size)
 {
 	uint32_t timeout;
@@ -241,7 +267,6 @@ uint8_t ICE_FPGA_Config(uint8_t *bitmap, uint32_t size)
 	ICE_SPI_WriteByte(ICE_SPI_DUMMY_BYTE);
 	ICE_SPI_WriteByte(ICE_SPI_DUMMY_BYTE);
 	ICE_SPI_WriteByte(ICE_SPI_DUMMY_BYTE);
-
 	/* Raise CS bit for subsequent port transactions */
 	ICE_SPI_CS_HIGH();
 #endif
@@ -249,6 +274,66 @@ uint8_t ICE_FPGA_Config(uint8_t *bitmap, uint32_t size)
 	/* no error handling for now */
 	return 0;
 }
+#else
+/* New version is closer to Lattice timing */
+uint8_t ICE_FPGA_Config(uint8_t *bitmap, uint32_t size)
+{
+	uint32_t timeout;
+
+	/* drop reset bit */
+	ICE_CRST_LOW();
+	
+	/* delay */
+	ets_delay_us(1);
+	
+	/* drop CS bit to signal slave mode */
+	ICE_SPI_CS_LOW();
+	
+	/* delay at least 200ns */
+	ets_delay_us(1);
+	
+	/* Wait for done bit to go inactive */
+	timeout = 100;
+	while(timeout && (ICE_CDONE_GET()==1))
+	{
+		timeout--;
+	}
+	if(!timeout)
+	{
+		/* Done bit didn't respond to Reset */
+		return 1;
+	}
+
+	/* raise reset */
+	ICE_CRST_HIGH();
+	
+	/* delay >1200us to allow FPGA to clear */
+	ets_delay_us(1200);
+	
+	/* send 8 dummy clocks with CS high */
+	ICE_SPI_CS_HIGH();
+	ICE_SPI_ClkToggle(8);
+	ICE_SPI_CS_LOW();
+	
+	/* send the bitstream */
+	ICE_SPI_WriteBlk(bitmap, size);
+
+    /* raise CS */
+	ICE_SPI_CS_HIGH();
+
+	/* bitbang clock */
+	ICE_SPI_ClkToggle(160);
+
+    /* error if DONE not asserted */
+    if(ICE_CDONE_GET()==0)
+    {
+		return 2;
+	}
+	
+	/* no error handling for now */
+	return 0;
+}
+#endif
 
 /*
  * Write a long to the FPGA SPI port

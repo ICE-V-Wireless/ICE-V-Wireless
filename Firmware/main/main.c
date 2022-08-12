@@ -11,6 +11,7 @@
 #include "spiffs.h"
 #include "wifi.h"
 #include "adc_c3.h"
+#include "sercmd.h"
 
 #define LED_PIN 10
 
@@ -78,6 +79,15 @@ void app_main(void)
 		ESP_LOGE(TAG, "WiFi Init Failed");
 #endif
 	
+#if 1
+	/* start up USB/serial command handler */
+	if(!sercmd_init())
+		ESP_LOGI(TAG, "Serial Command Running");
+	else
+		ESP_LOGE(TAG, "Serial Command Init Failed");
+#endif
+		
+	
 	/* wait here forever and blink */
     ESP_LOGI(TAG, "Looping...", btime);
 	gpio_set_direction(LED_PIN, GPIO_MODE_OUTPUT);
@@ -85,13 +95,12 @@ void app_main(void)
 	while(1)
 	{
 		gpio_set_level(LED_PIN, i&1);
-		//printf("%d\n", i);
-		//printf("Vbat = %d mV\n", 2*adc_c3_get());
 		
 		if((i&15)==0)
 		{
-			ESP_LOGI(TAG, "free heap: %d",esp_get_free_heap_size());
-			ESP_LOGI(TAG, "RSSI: %d", wifi_get_rssi());
+			//ESP_LOGI(TAG, "free heap: %d",esp_get_free_heap_size());
+			//ESP_LOGI(TAG, "RSSI: %d", wifi_get_rssi());
+			//ESP_LOGI(TAG, "Vbat = %d mV", 2*adc_c3_get());
 		}
 		
 		i++;

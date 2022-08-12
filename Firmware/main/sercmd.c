@@ -1,0 +1,225 @@
+/*
+ * sercmd.c - USB/Serial command interface for ICE-V Wireless
+ * 08-11-22 E. Brombaugh
+ */
+#include "sercmd.h"
+#include "ice.h"
+#include "spiffs.h"
+#include "adc_c3.h"
+
+static const char* TAG = "sercmd";
+
+static const uint8_t cmdheader[4] =
+{
+	0xE0, 0xBE, 0xFE, 0xCA
+};
+
+/*
+ * Command handler for serial
+ */
+void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
+{
+	uint32_t Data = 0;
+	uint8_t *psram_rdbuf = NULL;
+	uint32_t psram_rdsz = 0;
+	uint8_t err = 0, cfg_stat;	
+	
+	if(cmd == 0xf)
+	{
+		/* send configuration to FPGA */
+		if((cfg_stat = ICE_FPGA_Config((uint8_t *)buffer, txsz)))
+			err |= 8;
+	}
+	else if(cmd == 0xe)
+	{
+		/* save configuration to the SPIFFS filesystem */
+		if((cfg_stat = spiffs_write((char *)cfg_file, (uint8_t *)buffer, txsz)))
+			err |= 8;
+	}
+	else if(cmd == 0xc)
+	{
+		/* write block of data to PSRAM via SPI pass-thru */
+		uint32_t Addr = *((uint32_t *)buffer);
+		ICE_PSRAM_Write(Addr, (uint8_t *)buffer+4, txsz-4);
+	}
+	else if(cmd == 0xb)
+	{
+		/* read block of data from PSRAM via SPI pass-thru */
+		uint32_t Addr = *((uint32_t *)buffer);
+		psram_rdsz = *((uint32_t *)(buffer+4));
+		psram_rdbuf = malloc(psram_rdsz+1);	// extra byte at start for err status
+		if(psram_rdbuf)
+		{
+			ICE_PSRAM_Read(Addr, (uint8_t *)psram_rdbuf+1, psram_rdsz);
+		}
+		else
+		{
+			psram_rdsz = 0;
+			err |= 8;
+		}
+	}
+	else if(cmd == 0)
+	{
+        /* Read SPI register */
+		uint8_t Reg = *(uint32_t *)buffer & 0x7f;
+		ICE_FPGA_Serial_Read(Reg, &Data);
+	}
+	else if(cmd == 1)
+	{
+        /* Write SPI register */
+		uint8_t Reg = *(uint32_t *)buffer & 0x7f;
+		Data = *(uint32_t *)&buffer[4];
+		ICE_FPGA_Serial_Write(Reg, Data);
+	}
+	else if(cmd == 2)
+	{
+        /* Report Vbat */
+        Data = 2*(uint32_t)adc_c3_get();
+	}
+	else
+	{
+		err |= 8;
+	}
+
+#if 0	
+	/* reply with error status */
+	if((cmd == 0x0b) && (psram_rdbuf))
+	{
+		/* PSRAM Read cmd can return a lot of data */
+		// send() can return less bytes than supplied length.
+		// Walk-around for robust implementation.
+		int to_write = psram_rdsz+1;
+		psram_rdbuf[0] = *err;	// prepend err status
+		uint8_t *wbuf = psram_rdbuf;
+		while (to_write > 0) {
+			int written = send(sock, wbuf, to_write, 0);
+			if (written < 0) {
+				ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+			}
+			to_write -= written;
+			wbuf += written;
+		}
+		
+		/* done with read buffer */
+		free(psram_rdbuf);
+		psram_rdsz = 0;
+	}
+	else
+	{
+		/* other commands are simpler */
+		// send() can return less bytes than supplied length.
+		// Walk-around for robust implementation.
+		int to_write = ((cmd == 0) || (cmd==2)) ? 5 : 1;
+		sbuf[0] = *err;
+		if((cmd==0) || (cmd==2))
+			memcpy(&sbuf[1], &Data, 4);
+		while (to_write > 0) {
+			int written = send(sock, sbuf, to_write, 0);
+			if (written < 0) {
+				ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+			}
+			to_write -= written;
+		}
+	}
+#endif
+}
+
+/*
+ * Task handler for serial
+ */
+void sercmd_task(void *pvParameters)
+{
+	int newchar;
+	uint8_t cmdstate = 0, cmdval, *buffer = NULL, *bufptr = NULL;
+	uint32_t cmdsz, buffsz = 0;
+	
+	ESP_LOGI(TAG, "Serial Command Handler listening");
+	
+	/* loop forever waiting for serial inputs */
+    while(1)
+	{
+		/* character available? */
+		newchar = fgetc(stdin);
+		if(newchar != EOF)
+		{
+			if(cmdstate == 0)
+			{
+				/* look for first byte of header and get command */
+				if((newchar & 0xf0) == (cmdheader[cmdstate] & 0xf0))
+				{
+					cmdval = newchar & 0x0f;
+					cmdstate++;
+				}
+				else
+					cmdstate = 0;
+			}
+			else if(cmdstate<4)
+			{
+				/* look for last 3 bytes of header */
+				if(newchar == cmdheader[cmdstate])
+					cmdstate++;
+				else
+					cmdstate = 0;
+			}
+			else if(cmdstate < 8)
+			{
+				/* gather the size */
+				cmdsz = (cmdsz >> 8) | ((newchar & 0xff) << 24);
+				cmdstate++;
+				
+				if(cmdstate == 8)
+				{
+					/* got size, alloc buffer for data if needed */
+					buffsz = cmdsz;
+					if(buffsz)
+					{
+						buffer = malloc(buffsz);
+						bufptr = buffer;
+					}
+				}
+			}
+			else if(cmdstate == 8)
+			{
+				if(cmdsz--)
+				{
+					/* gather data */
+					*bufptr++ = newchar;
+				}
+				else
+				{
+					/* handle command */
+					sercmd_handle(cmdval, buffer, buffsz);
+				
+					/* done */
+					if(buffsz)
+					{
+						free(buffer);
+						buffsz = 0;
+					}
+					cmdstate = 0;
+				}
+			}
+			else
+				cmdstate = 0;
+		}
+		
+		/* yield to OS */
+		vTaskDelay(1);
+	}
+	
+	/* clean up - shouldn't get here */
+    vTaskDelete(NULL);
+}
+
+/*
+ * initialize serial command handling
+ */
+esp_err_t sercmd_init(void)
+{	
+	/* start a separate task to monitor serial */
+	if(xTaskCreate(sercmd_task, "sercmd", 4096, NULL, 5, NULL) != pdPASS)
+		return ESP_FAIL;
+	else
+		return ESP_OK;
+}
+	

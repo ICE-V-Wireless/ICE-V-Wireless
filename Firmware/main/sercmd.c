@@ -6,6 +6,7 @@
 #include "ice.h"
 #include "spiffs.h"
 #include "adc_c3.h"
+#include <string.h>
 
 static const char* TAG = "sercmd";
 
@@ -81,23 +82,17 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 		err |= 8;
 	}
 
-#if 0	
+#if 1
 	/* reply with error status */
 	if((cmd == 0x0b) && (psram_rdbuf))
 	{
 		/* PSRAM Read cmd can return a lot of data */
-		// send() can return less bytes than supplied length.
-		// Walk-around for robust implementation.
 		int to_write = psram_rdsz+1;
-		psram_rdbuf[0] = *err;	// prepend err status
+		psram_rdbuf[0] = err;	// prepend err status
 		uint8_t *wbuf = psram_rdbuf;
-		while (to_write > 0) {
-			int written = send(sock, wbuf, to_write, 0);
-			if (written < 0) {
-				ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
-			}
-			to_write -= written;
-			wbuf += written;
+		while(to_write-- > 0)
+		{
+			fputc(*wbuf++, stdout);
 		}
 		
 		/* done with read buffer */
@@ -107,18 +102,15 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 	else
 	{
 		/* other commands are simpler */
-		// send() can return less bytes than supplied length.
-		// Walk-around for robust implementation.
 		int to_write = ((cmd == 0) || (cmd==2)) ? 5 : 1;
-		sbuf[0] = *err;
+		uint8_t sbuf[5], *sptr;
+		sbuf[0] = err;
+		sptr = sbuf;
 		if((cmd==0) || (cmd==2))
 			memcpy(&sbuf[1], &Data, 4);
-		while (to_write > 0) {
-			int written = send(sock, sbuf, to_write, 0);
-			if (written < 0) {
-				ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
-			}
-			to_write -= written;
+		while(to_write-- > 0)
+		{
+			fputc(*sptr++, stdout);
 		}
 	}
 #endif

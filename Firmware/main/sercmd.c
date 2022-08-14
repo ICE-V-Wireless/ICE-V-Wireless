@@ -123,8 +123,8 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 void sercmd_task(void *pvParameters)
 {
 	int newchar;
-	uint8_t cmdstate = 0, cmdval, *buffer = NULL, *bufptr = NULL;
-	uint32_t cmdsz, buffsz = 0;
+	uint8_t cmdstate = 0, cmdval = 0, *buffer = NULL, *bufptr = NULL;
+	uint32_t cmdsz = 0, buffsz = 0;
 	
 	ESP_LOGI(TAG, "Serial Command Handler listening");
 	
@@ -135,6 +135,12 @@ void sercmd_task(void *pvParameters)
 		newchar = fgetc(stdin);
 		if(newchar != EOF)
 		{
+			/* status */
+			//if(cmdstate < 8)
+			{
+				uart2_printf("sercmd_task: rx = 0x%02X ", newchar);
+			}
+			
 			if(cmdstate == 0)
 			{
 				/* look for first byte of header and get command */
@@ -153,6 +159,9 @@ void sercmd_task(void *pvParameters)
 					cmdstate++;
 				else
 					cmdstate = 0;
+				
+				if(cmdstate == 4)
+					uart2_printf("header+cmd %1d ", cmdval);
 			}
 			else if(cmdstate < 8)
 			{
@@ -162,24 +171,33 @@ void sercmd_task(void *pvParameters)
 				
 				if(cmdstate == 8)
 				{
-					/* got size, alloc buffer for data if needed */
+					/* got size, alloc buffer for data */
 					buffsz = cmdsz;
+					uart2_printf("buffsz=0x%08X ", buffsz);
 					if(buffsz)
 					{
 						buffer = malloc(buffsz);
 						bufptr = buffer;
 					}
+					else
+					{
+						/* no buffer is illegal so just bail out */
+						cmdstate = 0;
+					}
 				}
 			}
 			else if(cmdstate == 8)
 			{
-				if(cmdsz--)
+				if(cmdsz)
 				{
 					/* gather data */
 					*bufptr++ = newchar;
+					cmdsz--;
 				}
-				else
+				
+				if(!cmdsz)
 				{
+					uart2_printf("handle buffer ");
 					/* handle command */
 					sercmd_handle(cmdval, buffer, buffsz);
 				
@@ -191,9 +209,16 @@ void sercmd_task(void *pvParameters)
 					}
 					cmdstate = 0;
 				}
+				uart2_printf("cmdsz=0x%08X ", cmdsz);
 			}
 			else
 				cmdstate = 0;
+			
+			/* status */
+			//if(cmdstate < 8)
+			{
+				uart2_printf("state = %1d \r\n", cmdstate);
+			}
 		}
 		
 		/* yield to OS */
@@ -211,7 +236,7 @@ esp_err_t sercmd_init(void)
 {
 	/* init a secondary UART for debugging */
 	uart2_init();
-	uart2_printf("sercmd_init: start debug\n");
+	uart2_printf("sercmd_init: start debug\r\n");
 	
 	/* start a separate task to monitor serial */
 	if(xTaskCreate(sercmd_task, "sercmd", 4096, NULL, 5, NULL) != pdPASS)

@@ -6,6 +6,7 @@ import sys
 import os
 import io
 import getopt
+import time
 
 # convert a command nybble into a 32-bit magic value for the header
 def make_magic(cmmd):
@@ -14,12 +15,10 @@ def make_magic(cmmd):
 # transmit a buffer of data to the tty
 def sendall(tty, buffer):
     size = len(buffer)
-    print(f"start size = {size}")
     while size:
         written = tty.write(buffer)
         size = size - written
         buffer = buffer[written:]
-        print(f"write size = {size}")
 
 # receive a buffer of data from the tty
 def recv(tty, lenbytes):
@@ -42,7 +41,7 @@ def send_file(name, cmmd, tty):
 
         # send to the socket server on the C3
         sendall(tty, payload)
-        reply = recv(tty, 1024)
+        reply = recv(tty, 1)
         if reply[0] :
             print("Error", reply[0])
 
@@ -55,7 +54,7 @@ def read_reg(reg, addr, tty):
     
     # send to the socket server on the C3
     sendall(tty, payload)
-    reply = recv(tty, 1024)
+    reply = recv(tty, 5)
     if reply[0]!= 0 :
         print("Error", reply[0])
     else:
@@ -72,12 +71,12 @@ def write_reg(reg, data, addr, tty):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((addr, port))
         s.sendall(payload)
-        reply = s.recv(1024)
+        reply = s.recv(1)
         if reply[0] :
             print("Error", reply[0])
         s.close()
 
-# send a read command plus register address
+# send a read vbat command
 def read_vbat(tty):
     magic = make_magic(2)
     regsz = 4
@@ -87,12 +86,14 @@ def read_vbat(tty):
     
     # send to the socket server on the C3
     sendall(tty, payload)
-    reply = recv(tty, 1024)
+    reply = recv(tty, 5)
+    print(len(reply))
+
     if reply[0]!= 0 :
         print("Error", reply[0])
     else:
         print("Vbat =", int.from_bytes(reply[1:4], byteorder='little'), "mV")
-
+    
 # write file to psram
 def psram_write(psaddr, name, tty):
     # open file as binary
@@ -112,7 +113,7 @@ def psram_write(psaddr, name, tty):
 
         # send to the socket server on the C3
         sendall(tty, payload)
-        reply = recv(tty, 1024)
+        reply = recv(tty, 1)
         if reply[0] :
             print("Error", reply[0])
 

@@ -109,10 +109,15 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 		sptr = sbuf;
 		if((cmd==0) || (cmd==2))
 			memcpy(&sbuf[1], &Data, 4);
+		uart2_printf("\r\nsercmd_handle: cmd = %d, reply = ", cmd);
 		while(to_write-- > 0)
 		{
+			uart2_printf("0x%02X ", *sptr);
 			fputc(*sptr++, stdout);
 		}
+		uart2_printf("\r\n");
+		fflush(stdout);
+		//fprintf(stdout, "cmd=%1d, err = %2x, data = 0x%08X\n", cmd, err, Data);
 	}
 #endif
 }

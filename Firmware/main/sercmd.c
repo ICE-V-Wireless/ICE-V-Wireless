@@ -7,6 +7,7 @@
 #include "spiffs.h"
 #include "adc_c3.h"
 #include <string.h>
+#include "uart2.h"
 
 static const char* TAG = "sercmd";
 
@@ -207,7 +208,11 @@ void sercmd_task(void *pvParameters)
  * initialize serial command handling
  */
 esp_err_t sercmd_init(void)
-{	
+{
+	/* init a secondary UART for debugging */
+	uart2_init();
+	uart2_printf("sercmd_init: start debug\n");
+	
 	/* start a separate task to monitor serial */
 	if(xTaskCreate(sercmd_task, "sercmd", 4096, NULL, 5, NULL) != pdPASS)
 		return ESP_FAIL;

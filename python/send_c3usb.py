@@ -55,7 +55,7 @@ def send_file(name, cmmd, tty):
             fileout(payload)
             
 # send a read command plus register address
-def read_reg(reg, addr, tty):
+def read_reg(reg, tty):
     magic = make_magic(0)
     regsz = 4
     size = regsz.to_bytes(4, byteorder = 'little')
@@ -63,11 +63,13 @@ def read_reg(reg, addr, tty):
     
     # send to the socket server on the C3
     sendall(tty, payload)
-    reply = recv(tty, 5)
-    if reply[0]!= 0 :
-        print("Error", reply[0])
-    else:
-        print("Read Reg", reg, "=", hex(int.from_bytes(reply[1:5], byteorder='little')))
+    reply = recv(tty, 11)
+    print(len(reply))
+    print(reply)
+    #if reply[0]!= 0 :
+    #    print("Error", reply[0])
+    #else:
+    #    print("Read Reg", reg, "=", hex(int.from_bytes(reply[1:5], byteorder='little')))
 
 # send a write command plus register address and data
 def write_reg(reg, data, addr, tty):
@@ -95,13 +97,14 @@ def read_vbat(tty):
     
     # send to the socket server on the C3
     sendall(tty, payload)
-    reply = recv(tty, 5)
+    reply = recv(tty, 11)
     print(len(reply))
-
-    if reply[0]!= 0 :
-        print("Error", reply[0])
-    else:
-        print("Vbat =", int.from_bytes(reply[1:4], byteorder='little'), "mV")
+    print(reply)
+    
+    #if reply[0]!= 0 :
+    #    print("Error", reply[0])
+    #else:
+    #    print("Vbat =", int.from_bytes(reply[1:4], byteorder='little'), "mV")
     
 # write file to psram
 def psram_write(psaddr, name, tty):
@@ -197,7 +200,8 @@ if __name__ == "__main__":
 
     # try to open the port and run the command
     tty = serial.Serial(port)
-        
+    tty.timeout = 1
+    
     # flush any RX data from the tty
     #while tty.readable():
      #   junk = tty.read(-1)

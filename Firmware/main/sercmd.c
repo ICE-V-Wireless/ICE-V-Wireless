@@ -106,6 +106,7 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 	}
 	else
 	{
+#if 0
 		/* other commands are simpler */
 		int to_write = ((cmd == 0) || (cmd==2)) ? 5 : 1;
 		uint8_t sbuf[5], *sptr;
@@ -114,14 +115,20 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 		if((cmd==0) || (cmd==2))
 			memcpy(&sbuf[1], &Data, 4);
 		uart2_printf("\r\nsercmd_handle: cmd = %d, reply = ", cmd);
+		write(stdout, sptr, to_write);
 		while(to_write-- > 0)
 		{
-			uart2_printf("0x%02X ", *sptr);
-			fputc(*sptr++, stdout);
+			uart2_printf("0x%02X ", *sptr++);
+			//fputc(*sptr++, stdout);
 		}
 		uart2_printf("\r\n");
 		fflush(stdout);
 		//fprintf(stdout, "cmd=%1d, err = %2x, data = 0x%08X\n", cmd, err, Data);
+#else
+		/* try sending as text */
+		uart2_printf("reply: %02X %08X\r\n", err, Data);
+		fprintf(stdout, "%02X %08X\n", err, Data);
+#endif
 	}
 #endif
 }

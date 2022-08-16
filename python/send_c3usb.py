@@ -4,9 +4,9 @@
 
 import sys
 import os
-import io
 import getopt
 import time
+import serial
 
 # convert a command nybble into a 32-bit magic value for the header
 def make_magic(cmmd):
@@ -24,6 +24,11 @@ def sendall(tty, buffer):
 def recv(tty, lenbytes):
     return tty.read(lenbytes)
 
+# write to test file
+def fileout(buffer):
+    with open("dump.bin", "wb") as binary_file:
+        binary_file.write(buffer)
+
 # send a file for direct load to FPGA or write to SPIFFS
 def send_file(name, cmmd, tty):
     # open file as binary
@@ -39,12 +44,16 @@ def send_file(name, cmmd, tty):
         size = file_len.to_bytes(4, byteorder = 'little')
         payload = b"".join([magic, size, file.read(file_len)])
 
-        # send to the socket server on the C3
-        sendall(tty, payload)
-        reply = recv(tty, 1)
-        if reply[0] :
-            print("Error", reply[0])
-
+        if 1:
+            # send to the C3 over usb
+            sendall(tty, payload)
+            reply = recv(tty, 1)
+            if reply[0] :
+                print("Error", reply[0])
+        else:
+            # write to a file for test
+            fileout(payload)
+            
 # send a read command plus register address
 def read_reg(reg, addr, tty):
     magic = make_magic(0)
@@ -187,9 +196,8 @@ if __name__ == "__main__":
             assert False, "unhandled option"
 
     # try to open the port and run the command
-    fd = os.open(port, os.O_RDWR | os.O_NOCTTY)
-    tty = io.FileIO(fd, 'w+')
-
+    tty = serial.Serial(port)
+        
     # flush any RX data from the tty
     #while tty.readable():
      #   junk = tty.read(-1)

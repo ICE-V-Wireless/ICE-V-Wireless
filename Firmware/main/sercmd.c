@@ -7,7 +7,11 @@
 #include "spiffs.h"
 #include "adc_c3.h"
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include "uart2.h"
+#include "rom/crc.h"
+#include "esp_vfs_usb_serial_jtag.h"
 
 static const char* TAG = "sercmd";
 
@@ -123,6 +127,33 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 }
 
 /*
+ * for checking buffer contents
+ */
+void dump_buffer(uint8_t *buf, uint32_t sz)
+{
+	uint8_t *bufptr = buf;
+	uint32_t i, j;
+	
+	/* check CRC vs linux crc32 cmd */
+    uint32_t crc = crc32_le(0, buf, sz);
+	uart2_printf("CRC32: %08X\r\n", crc);
+
+	/* override size */
+	sz = 1024;
+	
+	/* loop */
+	for(i=0;i<sz;i+=16)
+	{
+		uart2_printf("%08X ", i);
+		for(j=0;j<16;j++)
+		{
+			uart2_printf("%02X ", *bufptr++);
+		}
+		uart2_printf("\r\n");
+	}
+}
+
+/*
  * Task handler for serial
  */
 void sercmd_task(void *pvParameters)
@@ -131,6 +162,18 @@ void sercmd_task(void *pvParameters)
 	uint8_t cmdstate = 0, cmdval = 0, *buffer = NULL, *bufptr = NULL;
 	uint32_t cmdsz = 0, buffsz = 0;
 	
+    /* Disable buffering */
+    setvbuf(stdin, NULL, _IONBF, 0);
+    setvbuf(stdout, NULL, _IONBF, 0);
+
+    /* Disable translation */
+	esp_vfs_dev_usb_serial_jtag_set_rx_line_endings(ESP_LINE_ENDINGS_LF);
+	esp_vfs_dev_usb_serial_jtag_set_tx_line_endings(ESP_LINE_ENDINGS_LF);
+
+    /* Enable non-blocking mode on stdin and stdout */
+    fcntl(fileno(stdout), F_SETFL, 0);
+    fcntl(fileno(stdin), F_SETFL, 0);
+
 	ESP_LOGI(TAG, "Serial Command Handler listening");
 	
 	/* loop forever waiting for serial inputs */
@@ -140,12 +183,6 @@ void sercmd_task(void *pvParameters)
 		newchar = fgetc(stdin);
 		if(newchar != EOF)
 		{
-			/* status */
-			//if(cmdstate < 8)
-			{
-				uart2_printf("sercmd_task: rx = 0x%02X ", newchar);
-			}
-			
 			if(cmdstate == 0)
 			{
 				/* look for first byte of header and get command */
@@ -166,23 +203,46 @@ void sercmd_task(void *pvParameters)
 					cmdstate = 0;
 				
 				if(cmdstate == 4)
-					uart2_printf("header+cmd %1d ", cmdval);
+					uart2_printf("header+cmd %1d\r\n", cmdval);
 			}
 			else if(cmdstate < 8)
 			{
 				/* gather the size */
 				cmdsz = (cmdsz >> 8) | ((newchar & 0xff) << 24);
 				cmdstate++;
-				
+
 				if(cmdstate == 8)
 				{
 					/* got size, alloc buffer for data */
 					buffsz = cmdsz;
-					uart2_printf("buffsz=0x%08X ", buffsz);
+					uart2_printf("buffsz=0x%08X\r\n", buffsz);
 					if(buffsz)
 					{
 						buffer = malloc(buffsz);
 						bufptr = buffer;
+//#define SINGLECHAR
+#ifndef SINGLECHAR
+						/* buffer at a time */
+						int bytes;
+						while(cmdsz)
+						{
+							bytes = read(STDIN_FILENO, bufptr, cmdsz);
+							if(bytes>0)
+							{
+								bufptr += bytes;
+								cmdsz -= bytes;
+								//uart2_printf("read %d bytes, cmdsz = %d\r\n", bytes, cmdsz);
+							}
+						}
+						
+						/* handle command */
+						uart2_printf("handle cmd %d, bufsz %d\r\n", cmdval, buffsz);
+						//dump_buffer(buffer, buffsz);
+						sercmd_handle(cmdval, buffer, buffsz);
+						free(buffer);
+						buffsz = 0;
+						cmdstate = 0;
+#endif
 					}
 					else
 					{
@@ -195,14 +255,19 @@ void sercmd_task(void *pvParameters)
 			{
 				if(cmdsz)
 				{
-					/* gather data */
+#ifdef SINGLECHAR
+					/* gather data char at a time - slow! */
 					*bufptr++ = newchar;
 					cmdsz--;
+#endif
 				}
 				
+				if((cmdsz % 128) == 0)
+					uart2_printf("cmdsz %d\r\n", cmdsz);
+
 				if(!cmdsz)
 				{
-					uart2_printf("handle buffer ");
+					uart2_printf("handle cmd %d, bufsz %d\r\n", cmdval, buffsz);
 					/* handle command */
 					sercmd_handle(cmdval, buffer, buffsz);
 				
@@ -214,16 +279,9 @@ void sercmd_task(void *pvParameters)
 					}
 					cmdstate = 0;
 				}
-				uart2_printf("cmdsz=0x%08X ", cmdsz);
 			}
 			else
 				cmdstate = 0;
-			
-			/* status */
-			//if(cmdstate < 8)
-			{
-				uart2_printf("state = %1d \r\n", cmdstate);
-			}
 		}
 		
 		/* yield to OS */

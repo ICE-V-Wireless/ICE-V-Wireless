@@ -14,7 +14,7 @@
 #include "esp_vfs_usb_serial_jtag.h"
 
 /* uncomment to turn on UART2 debugging */
-//#define SERCMD_DBG
+#define SERCMD_DBG
 
 static const char* TAG = "sercmd";
 

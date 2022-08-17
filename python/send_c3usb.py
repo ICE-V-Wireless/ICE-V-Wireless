@@ -34,12 +34,16 @@ def recv(tty, lenbytes):
 # receive a short reply with err status and 32-bit data as hex
 def recv_err_data(tty):
     reply = tty.read(12)
-    rplystr = reply.decode('utf-8')
-    rplytok = rplystr.split()
-    err = int(rplytok[0], 16)
-    data = int(rplytok[1], 16)
-    return err, data
-
+    if len(reply)==12:
+        rplystr = reply.decode('utf-8')
+        rplytok = rplystr.split()
+        err = int(rplytok[0], 16)
+        data = int(rplytok[1], 16)
+        return err, data
+    else:
+        # didn't get a valid reply so set an error and null data
+        return 32, 0
+    
 # send a file for direct load to FPGA or write to SPIFFS
 def send_file(name, cmmd, tty):
     # open file as binary
@@ -48,7 +52,7 @@ def send_file(name, cmmd, tty):
         file.seek(0, os.SEEK_END)
         file_len = file.tell()
         file.seek(0, os.SEEK_SET)
-        print("Size of", name, "is", file_len, "bytes")
+        #print("Size of", name, "is", file_len, "bytes")
 
         # add the header with command
         magic = make_magic(cmmd)
@@ -153,8 +157,8 @@ def usage():
     print("  -f, --flash=<file>      : write <file> to SPIFFS flash")
     print("  -r, --read=REG          : register to read")
     print("  -w, --write=REG DATA    : register to write and data to write")
-    print("      --ps_rd=ADDR LEN    : read PSRAM at ADDR for LEN to stdout")
-    print("      --ps_wr=ADDR <file> : write PSRAM at ADDR with data in <file>")
+    #print("      --ps_rd=ADDR LEN    : read PSRAM at ADDR for LEN to stdout")
+    #print("      --ps_wr=ADDR <file> : write PSRAM at ADDR with data in <file>")
 
 # main entry
 if __name__ == "__main__":
@@ -199,12 +203,8 @@ if __name__ == "__main__":
 
     # try to open the port and run the command
     tty = serial.Serial(port)
-    tty.timeout = 1
+    tty.timeout = 2 # -f option can be very slow
     
-    # flush any RX data from the tty
-    #while tty.readable():
-     #   junk = tty.read(-1)
-
     # check for non-option arg
     if cmmd > 13:
         # bitstream file handler

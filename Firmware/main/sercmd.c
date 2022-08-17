@@ -73,6 +73,7 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 	{
         /* Read SPI register */
 		uint8_t Reg = *(uint32_t *)buffer & 0x7f;
+		uart2_printf("read reg %d\r\n", Reg);
 		ICE_FPGA_Serial_Read(Reg, &Data);
 	}
 	else if(cmd == 1)

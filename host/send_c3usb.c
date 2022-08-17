@@ -27,7 +27,11 @@ static void help(void)
 	fprintf(stderr,
 	    "Usage: send_c3usb <options> [FILE]\n"
 		"  FILE is a file containing the FPGA bitstream to ICE-V\n"
+		"  -b gets the current battery voltage\n"
+		"  -f write bitstream to SPIFFS instead of to FPGA\n"
 		"  -p <port> specify the CDC port (default = /dev/ttyACM0)\n"
+		"  -r <reg> read FPGA register\n"
+		"  -w <reg> <data> write FPGA register\n"
 		"  -v enables verbose progress messages\n"
 		"  -V prints the tool version\n");
 	exit(1);
@@ -35,9 +39,8 @@ static void help(void)
 
 int main(int argc, char **argv)
 {
-	int flags = 0, verbose = 0, sz = 0, id = 0, er = 0, rd = 0, wr = 0, ne = 0,
-		rsz, wsz, buffs;
-	unsigned int addr = 0, len = 0x8000;
+	int flags = 0, verbose = 0, err = 0, sz, cmd = 15, reg = 0, rsz, wsz, buffs;
+	unsigned int data = 0;
     char *port = "/dev/ttyACM0";
     FILE *infile;
     struct termios termios_p;
@@ -47,9 +50,30 @@ int main(int argc, char **argv)
 	{
 		switch (argv[1+flags][1])
 		{
+		case 'b':
+			cmd = 2;
+			break;
+		case 'f':
+			cmd = 14;
+			break;
 		case 'p':
 			if (2+flags < argc)
                 port = argv[flags+2];
+			flags++;
+			break;
+		case 'r':
+			cmd = 0;
+			if (2+flags < argc)
+                reg = atoi(argv[flags+2]);
+			flags++;
+			break;
+		case 'w':
+			cmd = 1;
+			if (2+flags < argc)
+                reg = atoi(argv[flags+2]);
+			flags++;
+			if (2+flags < argc)
+                data = atoi(argv[flags+2]);
 			flags++;
 			break;
 		case 'v':
@@ -65,7 +89,7 @@ int main(int argc, char **argv)
 		}
 		flags++;
 	}
-    
+	
     /* open output port */
     cdc_file = open(port, O_RDWR);
     if(cdc_file<0)
@@ -76,7 +100,7 @@ int main(int argc, char **argv)
 	else
 	{
         /* port opened so set up termios for raw binary */
-        fprintf(stderr,"opened cdc device %s\n", port);
+        if(verbose) fprintf(stderr,"opened cdc device %s\n", port);
         
         /* get TTY attribs */
         tcgetattr(cdc_file, &termios_p);
@@ -99,36 +123,55 @@ int main(int argc, char **argv)
         /* set attribs */
         tcsetattr(cdc_file, 0, &termios_p);
 		
-		fprintf(stderr, "Port configured\n");
+		if(verbose) fprintf(stderr, "Port configured\n");
     }
 	
-    /* get file */
-    if (2+flags > argc)
-    {
-        /* missing argument */
-        fprintf(stderr, "Error: Missing bitstream file\n");
-        close(cdc_file);
-        help();
+	/* flush out any stuff in the rx pipe */
+	sz = read(cdc_file, buffer, 64);
+	if(verbose) fprintf(stderr, "Flushed %d bytes from rx\n", sz);
+	
+	/* get size */
+	if(cmd==1)
+	{
+		/* write command */
+		sz = 8;
+	}
+	else if(cmd >= 14)
+	{
+		/* get file */
+		if (2+flags > argc)
+		{
+			/* missing argument */
+			fprintf(stderr, "Error: Missing bitstream file\n");
+			close(cdc_file);
+			help();
+			exit(1);
+		}
+		else
+		{
+			/* open file */
+			if(!(infile = fopen(argv[flags + 1], "rb")))
+			{
+				fprintf(stderr, "Error: unable to open file %s for read\n", argv[flags + 1]);
+				close(cdc_file);
+				exit(1);
+			}
+			
+			/* get length */
+			fseek(infile, 0L, SEEK_END);
+			sz = ftell(infile);
+			fseek(infile, 0L, SEEK_SET);
+			if(verbose) fprintf(stderr, "Opened file %s with size %d\n", argv[flags + 1], sz);
+		}
     }
-    else
-    {
-        /* open file */
-        if(!(infile = fopen(argv[flags + 1], "rb")))
-        {
-            fprintf(stderr, "Error: unable to open file %s for read\n", argv[flags + 1]);
-            close(cdc_file);
-            exit(1);
-        }
-        
-        /* get length */
-        fseek(infile, 0L, SEEK_END);
-        sz = ftell(infile);
-        fseek(infile, 0L, SEEK_SET);
-        fprintf(stderr, "Opened file %s with size %d\n", argv[flags + 1], sz);
-    }
-    
-	/* FPGA configuration header */
-	buffer[0] = 0xEF;	// cmd 15 - immediate write
+	else
+	{
+		/* all others */
+		sz = 4;
+	}
+	
+	/* Send command header */
+	buffer[0] = 0xE0 | (cmd & 0xF);
 	buffer[1] = 0xBE;
 	buffer[2] = 0xFE;
 	buffer[3] = 0xCA;
@@ -138,24 +181,65 @@ int main(int argc, char **argv)
 	buffer[7] = (sz>>24)&0xff;
 	write(cdc_file, buffer, 8);
 		
-	fprintf(stderr, "Header Sent\n");
+	if(verbose) fprintf(stderr, "Header Sent\n");
 	
-    /* send the body 64 bytes at a time */
-    wsz = 0;
-    buffs = 0;
-    while((rsz = fread(buffer, 1, 64, infile)) > 0)
-    {
-        write(cdc_file, buffer, rsz);
-        wsz += rsz;
-        buffs++;
-    }
-    fprintf(stderr, "Sent %d bytes, %d buffers\n", wsz, buffs);
+	/* Send payload */
+    if(cmd >= 14)
+	{
+		/* send the payload from a file 64 bytes at a time */
+		wsz = 0;
+		buffs = 0;
+		while((rsz = fread(buffer, 1, 64, infile)) > 0)
+		{
+			write(cdc_file, buffer, rsz);
+			wsz += rsz;
+			buffs++;
+		}
+		fclose(infile);
+		if(verbose) fprintf(stderr, "Sent %d bytes, %d buffers\n", wsz, buffs);
+	}
+	else
+	{
+		/* send the reg */
+		write(cdc_file, (unsigned int *)&reg, 4);
+		
+		/* if write, send data */
+		if(cmd==1)
+		{
+			write(cdc_file, (unsigned int *)&data, 4);
+		}
+		
+		if(verbose) fprintf(stderr, "Sent %d bytes\n", sz);		
+	}
 	
-	/* get result */
-	read(cdc_file, buffer, 1);
-	fprintf(stderr, "Result: %d\n", buffer[0]);
-    
-    fclose(infile);
+	/* wait a bit and get result SPIFFS writes can take a while! */
+	usleep(cmd == 14 ? 2000000 : 100000);
+	sz = read(cdc_file, buffer, 64);
+	if(sz)
+	{
+		if(verbose) fprintf(stderr, "Result: %s (len = %d)\n", buffer, sz);
+		char *tok = strtok(buffer, " \n");
+		err = strtol(tok, NULL, 16);
+		tok = strtok(NULL, " \n");
+		data = strtol(tok, NULL, 16);
+		
+		/* report error or return value if applicable */
+		if(err)
+			fprintf(stderr, "Error %d\n", err);
+		else
+		{
+			if(cmd == 0)
+				fprintf(stdout, "Reg 0x%02X = 0x%08X\n", reg, data);
+			else if(cmd == 2)
+				fprintf(stdout, "Battery = %d mV\n", data);
+		}
+	}
+	else
+	{
+		fprintf(stderr, "Error - no reply\n");
+		err = 1;
+	}
+		
     close(cdc_file);
-    return 0;
+    return err;
 }

@@ -41,29 +41,25 @@ void app_main(void)
 	ICE_Init();
     ESP_LOGI(TAG, "FPGA SPI port initialized");
 	
-#if 1
 	/* configure FPGA from SPIFFS file */
     ESP_LOGI(TAG, "Reading file %s", cfg_file);
 	uint8_t *bin = NULL;
 	uint32_t sz;
 	if(!spiffs_read((char *)cfg_file, &bin, &sz))
 	{
-		uint8_t cfg_stat;	
-#if 0
-		/* configure FPGA from const array */
-		if((cfg_stat = ICE_FPGA_Config(bin, sz)))
-			ESP_LOGW(TAG, "FPGA configured ERROR - status = %d", cfg_stat);
-		else
-			ESP_LOGI(TAG, "FPGA configured OK - status = %d", cfg_stat);
-#else
+		uint8_t cfg_stat;
+		
 		/* loop on config failure */
-		while((cfg_stat = ICE_FPGA_Config(bin, sz)))
+		int8_t retry = 4;
+		while((cfg_stat = ICE_FPGA_Config(bin, sz)) && (retry--))
 			ESP_LOGW(TAG, "FPGA configured ERROR - status = %d", cfg_stat);
-		ESP_LOGI(TAG, "FPGA configured OK - status = %d", cfg_stat);
-#endif
+		if(retry)
+			ESP_LOGI(TAG, "FPGA configured OK - status = %d", cfg_stat);
+		else
+			ESP_LOGW(TAG, "FPGA configured ERROR - giving up");
+
 		free(bin);
 	}
-#endif
 
     /* init ADC for Vbat readings */
     if(!adc_c3_init())

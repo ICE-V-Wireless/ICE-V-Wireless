@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# add a header to a file and send it to the ESP32C3 FPGA USB/Serial
+# add a header to a file and send it to the ICE-V Wireless via USB/Serial
 # 08-12-22 E. Brombaugh
 
 import sys
@@ -10,24 +10,35 @@ import serial
 
 # convert a command nybble into a 32-bit magic value for the header
 def make_magic(cmmd):
+    cmmd = cmmd & 15
     return bytearray([0xE0+cmmd, 0xBE, 0xFE, 0xCA])
 
 # transmit a buffer of data to the tty
 def sendall(tty, buffer):
-    size = len(buffer)
-    while size:
-        written = tty.write(buffer)
-        size = size - written
-        buffer = buffer[written:]
+    if 1:
+        # normal operation
+        size = len(buffer)
+        while size:
+            written = tty.write(buffer)
+            size = size - written
+            buffer = buffer[written:]
+    else:
+        # write to a file for analysis
+        with open("dump.bin", "wb") as binary_file:
+            binary_file.write(buffer)
 
 # receive a buffer of data from the tty
 def recv(tty, lenbytes):
     return tty.read(lenbytes)
 
-# write to test file
-def fileout(buffer):
-    with open("dump.bin", "wb") as binary_file:
-        binary_file.write(buffer)
+# receive a short reply with err status and 32-bit data as hex
+def recv_err_data(tty):
+    reply = tty.read(12)
+    rplystr = reply.decode('utf-8')
+    rplytok = rplystr.split()
+    err = int(rplytok[0], 16)
+    data = int(rplytok[1], 16)
+    return err, data
 
 # send a file for direct load to FPGA or write to SPIFFS
 def send_file(name, cmmd, tty):
@@ -44,15 +55,11 @@ def send_file(name, cmmd, tty):
         size = file_len.to_bytes(4, byteorder = 'little')
         payload = b"".join([magic, size, file.read(file_len)])
 
-        if 1:
-            # send to the C3 over usb
-            sendall(tty, payload)
-            reply = recv(tty, 1)
-            if reply[0] :
-                print("Error", reply[0])
-        else:
-            # write to a file for test
-            fileout(payload)
+        # send to the C3 over usb
+        sendall(tty, payload)
+        err, data = recv_err_data(tty)
+        if err:
+            print("Error", err)
             
 # send a read command plus register address
 def read_reg(reg, tty):
@@ -61,31 +68,26 @@ def read_reg(reg, tty):
     size = regsz.to_bytes(4, byteorder = 'little')
     payload = b"".join([magic, size, reg.to_bytes(4, byteorder = 'little')])
     
-    # send to the socket server on the C3
+    # send to the C3 over usb
     sendall(tty, payload)
-    reply = recv(tty, 11)
-    print(len(reply))
-    print(reply)
-    #if reply[0]!= 0 :
-    #    print("Error", reply[0])
-    #else:
-    #    print("Read Reg", reg, "=", hex(int.from_bytes(reply[1:5], byteorder='little')))
+    err, data = recv_err_data(tty)
+    if err:
+        print("Error", err)
+    else:
+        print("Read Reg", reg, "=", hex(data))
 
 # send a write command plus register address and data
-def write_reg(reg, data, addr, tty):
+def write_reg(reg, data, tty):
     magic = make_magic(1)
     regsz = 8
     size = regsz.to_bytes(4, byteorder = 'little')
     payload = b"".join([magic, size, reg.to_bytes(4, byteorder = 'little'), data.to_bytes(4, byteorder = 'little')])
     
-    # send to the socket server on the C3
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((addr, port))
-        s.sendall(payload)
-        reply = s.recv(1)
-        if reply[0] :
-            print("Error", reply[0])
-        s.close()
+    # send to the C3 over usb
+    sendall(tty, payload)
+    err, data = recv_err_data(tty)
+    if err:
+        print("Error", err)
 
 # send a read vbat command
 def read_vbat(tty):
@@ -95,16 +97,13 @@ def read_vbat(tty):
     size = regsz.to_bytes(4, byteorder = 'little')
     payload = b"".join([magic, size, reg.to_bytes(4, byteorder = 'little')])
     
-    # send to the socket server on the C3
+    # send to the C3 over usb
     sendall(tty, payload)
-    reply = recv(tty, 11)
-    print(len(reply))
-    print(reply)
-    
-    #if reply[0]!= 0 :
-    #    print("Error", reply[0])
-    #else:
-    #    print("Vbat =", int.from_bytes(reply[1:4], byteorder='little'), "mV")
+    err, data = recv_err_data(tty)
+    if err:
+        print("Error", err)
+    else:
+        print("Vbat =", data, "mV")
     
 # write file to psram
 def psram_write(psaddr, name, tty):
@@ -123,11 +122,11 @@ def psram_write(psaddr, name, tty):
         psaddr_bytes = psaddr.to_bytes(4, byteorder = 'little')
         payload = b"".join([magic, size_bytes, psaddr_bytes, file.read(file_len)])
 
-        # send to the socket server on the C3
+        # send to the C3 over usb
         sendall(tty, payload)
-        reply = recv(tty, 1)
-        if reply[0] :
-            print("Error", reply[0])
+        err, data = recv_err_data(tty)
+        if err:
+            print("Error", err)
 
 # read psram to stdout
 def psram_read(psaddr, numbytes, tty):
@@ -138,7 +137,7 @@ def psram_read(psaddr, numbytes, tty):
     len_bytes = numbytes.to_bytes(4, byteorder = 'little')
     payload = b"".join([magic, size_bytes, psaddr_bytes, len_bytes])
     
-    # send to the socket server on the C3
+    # send to the C3 over usb
     sendall(tty, payload)
     reply = recv(tty, len+1)
     if reply[0] :
@@ -214,15 +213,21 @@ if __name__ == "__main__":
         else:
             print("missing filename")
     elif cmmd == 12:
-        if len(args) > 0:
-            psram_write(psaddr, args[0], tty)
+        if 0:
+            if len(args) > 0:
+                psram_write(psaddr, args[0], tty)
+            else:
+                 print("missing filename")
         else:
-             print("missing filename")
+            print("Not yet supported")
     elif cmmd == 11:
-        if len(args) > 0:
-            psram_read(psaddr, int(args[0]), tty)
+        if 0:
+            if len(args) > 0:
+                psram_read(psaddr, int(args[0]), tty)
+            else:
+                 print("missing length")
         else:
-             print("missing length")
+            print("Not yet supported")
     elif cmmd == 0:
         read_reg(reg, tty)
     elif cmmd == 1:

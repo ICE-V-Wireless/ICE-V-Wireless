@@ -11,13 +11,17 @@
 #define UART2_ID 	UART_NUM_1
 #define UART2_TXPIN 21	// usual logging tx pin
 
-QueueHandle_t uart_queue;
+static int8_t uart2_enabled = 0;
+static QueueHandle_t uart_queue;
 
 /*
  * initialize secondary UART
  */
 esp_err_t uart2_init(void)
 {
+	/* enable us */
+	uart2_enabled = 1;
+	
     /* Configure parameters of an UART driver,
      * communication pins and install the driver */
     uart_config_t uart_config = {
@@ -47,6 +51,10 @@ void uart2_printf(const char* format, ... )
 {
     va_list args;
 	char buffer[256];
+	
+	/* no action if not initialized */
+	if(!uart2_enabled)
+		return;
 	
 	/* print to string with varargs */
     va_start( args, format );

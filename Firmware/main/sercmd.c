@@ -13,6 +13,9 @@
 #include "rom/crc.h"
 #include "esp_vfs_usb_serial_jtag.h"
 
+/* uncomment to turn on UART2 debugging */
+//#define SERCMD_DBG
+
 static const char* TAG = "sercmd";
 
 static const uint8_t cmdheader[4] =
@@ -29,6 +32,8 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 	uint8_t *psram_rdbuf = NULL;
 	uint32_t psram_rdsz = 0;
 	uint8_t err = 0, cfg_stat;	
+	
+	uart2_printf("sercmd_handle: cmd %d, bufsz %d\r\n", cmd, txsz);
 	
 	if(cmd == 0xf)
 	{
@@ -84,10 +89,10 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 	}
 	else
 	{
+		/* unknown command */
 		err |= 8;
 	}
 
-#if 1
 	/* reply with error status */
 	if((cmd == 0x0b) && (psram_rdbuf))
 	{
@@ -106,31 +111,10 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 	}
 	else
 	{
-#if 0
-		/* other commands are simpler */
-		int to_write = ((cmd == 0) || (cmd==2)) ? 5 : 1;
-		uint8_t sbuf[5], *sptr;
-		sbuf[0] = err;
-		sptr = sbuf;
-		if((cmd==0) || (cmd==2))
-			memcpy(&sbuf[1], &Data, 4);
-		uart2_printf("\r\nsercmd_handle: cmd = %d, reply = ", cmd);
-		write(stdout, sptr, to_write);
-		while(to_write-- > 0)
-		{
-			uart2_printf("0x%02X ", *sptr++);
-			//fputc(*sptr++, stdout);
-		}
-		uart2_printf("\r\n");
-		fflush(stdout);
-		//fprintf(stdout, "cmd=%1d, err = %2x, data = 0x%08X\n", cmd, err, Data);
-#else
-		/* try sending as text */
-		uart2_printf("reply: %02X %08X\r\n", err, Data);
+		/* For most commands send reply as text */
+		uart2_printf("short reply: %02X %08X\r\n", err, Data);
 		fprintf(stdout, "%02X %08X\n", err, Data);
-#endif
 	}
-#endif
 }
 
 /*
@@ -143,7 +127,7 @@ void dump_buffer(uint8_t *buf, uint32_t sz)
 	
 	/* check CRC vs linux crc32 cmd */
     uint32_t crc = crc32_le(0, buf, sz);
-	uart2_printf("CRC32: %08X\r\n", crc);
+	uart2_printf("dump_buffer - CRC32: %08X\r\n", crc);
 
 	/* override size */
 	sz = 1024;
@@ -220,17 +204,17 @@ void sercmd_task(void *pvParameters)
 
 				if(cmdstate == 8)
 				{
-					/* got size, alloc buffer for data */
+					/* Got header so handle payload */
 					buffsz = cmdsz;
 					uart2_printf("buffsz=0x%08X\r\n", buffsz);
 					if(buffsz)
 					{
+						/* alloc buffer for payload */
 						buffer = malloc(buffsz);
 						bufptr = buffer;
-//#define SINGLECHAR
-#ifndef SINGLECHAR
-						/* buffer at a time */
-						int bytes;
+						
+						/* buffer at a time - USB does 64 bytes max */
+						int bytes, timeout = 0;
 						while(cmdsz)
 						{
 							bytes = read(STDIN_FILENO, bufptr, cmdsz);
@@ -238,18 +222,33 @@ void sercmd_task(void *pvParameters)
 							{
 								bufptr += bytes;
 								cmdsz -= bytes;
-								//uart2_printf("read %d bytes, cmdsz = %d\r\n", bytes, cmdsz);
+								timeout = 0;	// reset timeout
 							}
+							
+							/* don't hang if data ceases unexpectedly */
+							if(timeout++ > 1000)
+							{
+								uart2_printf("timeout waiting for payload\r\n");
+								cmdval = 16;	// force illegal command
+								break;
+							}
+							
+							/*
+							 * was thinking of putting a vTaskDelay() here
+							 * but it would likely slow things down too
+							 * much.
+							 */
 						}
 						
-						/* handle command */
-						uart2_printf("handle cmd %d, bufsz %d\r\n", cmdval, buffsz);
 						//dump_buffer(buffer, buffsz);
+						
+						/* handle command */
 						sercmd_handle(cmdval, buffer, buffsz);
+						
+						/* clean up */
 						free(buffer);
 						buffsz = 0;
 						cmdstate = 0;
-#endif
 					}
 					else
 					{
@@ -258,37 +257,8 @@ void sercmd_task(void *pvParameters)
 					}
 				}
 			}
-			else if(cmdstate == 8)
-			{
-				if(cmdsz)
-				{
-#ifdef SINGLECHAR
-					/* gather data char at a time - slow! */
-					*bufptr++ = newchar;
-					cmdsz--;
-#endif
-				}
-				
-				if((cmdsz % 128) == 0)
-					uart2_printf("cmdsz %d\r\n", cmdsz);
-
-				if(!cmdsz)
-				{
-					uart2_printf("handle cmd %d, bufsz %d\r\n", cmdval, buffsz);
-					/* handle command */
-					sercmd_handle(cmdval, buffer, buffsz);
-				
-					/* done */
-					if(buffsz)
-					{
-						free(buffer);
-						buffsz = 0;
-					}
-					cmdstate = 0;
-				}
-			}
 			else
-				cmdstate = 0;
+				cmdstate = 0;	/* illegal state so reset */
 		}
 		
 		/* yield to OS */
@@ -304,9 +274,15 @@ void sercmd_task(void *pvParameters)
  */
 esp_err_t sercmd_init(void)
 {
+	/* turn off console logging so we can use the console for command/data */
+    ESP_LOGW(TAG, "!!!Disabling Logging!!!!");
+	esp_log_level_set("*", ESP_LOG_NONE);
+
+#ifdef SERCMD_DBG
 	/* init a secondary UART for debugging */
 	uart2_init();
 	uart2_printf("sercmd_init: start debug\r\n");
+#endif
 	
 	/* start a separate task to monitor serial */
 	if(xTaskCreate(sercmd_task, "sercmd", 4096, NULL, 5, NULL) != pdPASS)

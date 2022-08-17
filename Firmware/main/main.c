@@ -90,10 +90,6 @@ void app_main(void)
 	
 	/* wait here forever and blink */
     ESP_LOGI(TAG, "Looping...", btime);
-	
-    ESP_LOGW(TAG, "!!!Disabling Logging!!!!");
-	esp_log_level_set("*", ESP_LOG_NONE);
-
 	gpio_set_direction(LED_PIN, GPIO_MODE_OUTPUT);
 	uint8_t i = 0;
 	while(1)

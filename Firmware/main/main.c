@@ -71,7 +71,7 @@ void app_main(void)
     else
         ESP_LOGW(TAG, "ADC Init Failed");
     
-#if 0
+#if 1
 	/* init WiFi & socket */
 	if(!wifi_init())
 		ESP_LOGI(TAG, "WiFi Running");

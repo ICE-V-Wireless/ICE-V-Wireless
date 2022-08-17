@@ -34,6 +34,12 @@
 static const char* TAG = "ice";
 static spi_device_handle_t spi;
 
+/* resource locking */
+xSemaphoreHandle ice_mutex;
+
+/*
+ * init the FPGA interface
+ */
 void ICE_Init(void)
 {
     esp_err_t ret;
@@ -46,13 +52,16 @@ void ICE_Init(void)
         .max_transfer_sz = ICE_SPI_MAX_XFER,
     };
     spi_device_interface_config_t devcfg={
-        .clock_speed_hz=10*1000*1000,           //Clock out at 40 MHz
+        .clock_speed_hz=10*1000*1000,           //Clock out at 10 MHz
         .mode=0,                                //SPI mode 0
         .spics_io_num=-1,                       //CS pin not used
         .queue_size=7,                          //We want to be able to queue 7 transactions at a time
     };
-
-    //Initialize the SPI bus
+	
+	/* create the mutex for access to the FPGA port */
+	vSemaphoreCreateBinary(ice_mutex);
+	
+    /* Initialize the SPI bus */
     ESP_LOGI(TAG, "Initialize SPI");
 	gpio_reset_pin(ICE_SPI_MISO_PIN);
 	gpio_reset_pin(ICE_SPI_MOSI_PIN);
@@ -60,11 +69,11 @@ void ICE_Init(void)
     ret=spi_bus_initialize(ICE_SPI_HOST, &buscfg, SPI_DMA_CH_AUTO);
     ESP_ERROR_CHECK(ret);
 	
-    //Attach the SPI bus
+    /* Attach the SPI bus */
     ret=spi_bus_add_device(ICE_SPI_HOST, &devcfg, &spi);
     ESP_ERROR_CHECK(ret);
 
-    //Initialize non-SPI GPIOs
+    /* Initialize non-SPI GPIOs */
 	/* pins 4-7 must be reset prior to use to get out of JTAG mode */
     ESP_LOGI(TAG, "Initialize GPIO");
 	gpio_reset_pin(ICE_SPI_CS_PIN);
@@ -77,6 +86,9 @@ void ICE_Init(void)
 	gpio_set_direction(ICE_CDONE_PIN, GPIO_MODE_INPUT);
 }
 
+/*
+ * write a byte to the SPI port
+ */
 void ICE_SPI_WriteByte(uint8_t dat8)
 {
     esp_err_t ret;
@@ -88,6 +100,9 @@ void ICE_SPI_WriteByte(uint8_t dat8)
     assert(ret==ESP_OK);            //Should have had no issues.
 }
 
+/*
+ * write a byte and read a byte to/from the SPI port
+ */
 uint8_t ICE_SPI_WriteReadByte(uint8_t tdat8)
 {
 	uint8_t rdat8;

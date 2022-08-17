@@ -207,52 +207,67 @@ void sercmd_task(void *pvParameters)
 					/* Got header so handle payload */
 					buffsz = cmdsz;
 					uart2_printf("buffsz=0x%08X\r\n", buffsz);
+					
 					if(buffsz)
 					{
-						/* alloc buffer for payload */
-						buffer = malloc(buffsz);
-						bufptr = buffer;
-						
-						/* buffer at a time - USB does 64 bytes max */
-						int bytes, timeout = 0;
-						while(cmdsz)
-						{
-							bytes = read(STDIN_FILENO, bufptr, cmdsz);
-							if(bytes>0)
+						/* lock resources */
+						if(xSemaphoreTake(ice_mutex, (TickType_t)100)==pdTRUE)
+						{							
+							/* alloc buffer for payload */
+							buffer = malloc(buffsz);
+							bufptr = buffer;
+							
+							/* buffer at a time - USB does 64 bytes max */
+							int bytes, timeout = 0;
+							while(cmdsz)
 							{
-								bufptr += bytes;
-								cmdsz -= bytes;
-								timeout = 0;	// reset timeout
+								bytes = read(STDIN_FILENO, bufptr, cmdsz);
+								if(bytes>0)
+								{
+									bufptr += bytes;
+									cmdsz -= bytes;
+									timeout = 0;	// reset timeout
+								}
+								
+								/* don't hang if data ceases unexpectedly */
+								if(timeout++ > 1000)
+								{
+									uart2_printf("timeout waiting for payload\r\n");
+									cmdval = 16;	// force illegal command
+									break;
+								}
+								
+								/*
+								 * was thinking of putting a vTaskDelay() here
+								 * but it would likely slow things down too
+								 * much.
+								 */
 							}
 							
-							/* don't hang if data ceases unexpectedly */
-							if(timeout++ > 1000)
-							{
-								uart2_printf("timeout waiting for payload\r\n");
-								cmdval = 16;	// force illegal command
-								break;
-							}
+							//dump_buffer(buffer, buffsz);
 							
-							/*
-							 * was thinking of putting a vTaskDelay() here
-							 * but it would likely slow things down too
-							 * much.
-							 */
+							/* handle command */
+							sercmd_handle(cmdval, buffer, buffsz);
+							
+							/* clean up */
+							free(buffer);
+							buffsz = 0;
+							cmdstate = 0;
+							
+							/* unlock resources */
+							xSemaphoreGive(ice_mutex);
 						}
-						
-						//dump_buffer(buffer, buffsz);
-						
-						/* handle command */
-						sercmd_handle(cmdval, buffer, buffsz);
-						
-						/* clean up */
-						free(buffer);
-						buffsz = 0;
-						cmdstate = 0;
+						else
+						{
+							/* Someone else had the FPGA for > 1 sec */
+							uart2_printf("Couldn't get FPGA access\r\n");
+							cmdstate = 0;
+						}
 					}
 					else
 					{
 						/* no buffer is illegal so just bail out */
+						uart2_printf("No payload\r\n");
 						cmdstate = 0;
 					}
 				}

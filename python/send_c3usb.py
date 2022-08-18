@@ -148,6 +148,22 @@ def psram_read(psaddr, numbytes, tty):
         print("Error", reply[0])
     sys.stdout.buffer.write(reply[1:])
 
+# send credentials (ssid or password)
+def send_cred(cred_type, cred_value, tty):
+    cred_type = cred_type & 1
+    magic = make_magic(3+cred_type)
+    size = len(cred_value)+1
+    size_bytes = size.to_bytes(4, byteorder = 'little')
+    cred_value_bytes = bytes(cred_value, 'ascii') + b'\x00'
+    payload = b"".join([magic, size_bytes, cred_value_bytes])
+    
+    # send to the C3 over usb
+    sendall(tty, payload)
+    err, data = recv_err_data(tty)
+    if err:
+        print("Error", err)
+    
+    
 # usage text for command line
 def usage():
     print(sys.argv[0], " [options] [<file>] | [DATA] | [LEN] communicate with ESP32C3 FPGA")
@@ -159,11 +175,13 @@ def usage():
     print("  -w, --write=REG DATA    : register to write and data to write")
     #print("      --ps_rd=ADDR LEN    : read PSRAM at ADDR for LEN to stdout")
     #print("      --ps_wr=ADDR <file> : write PSRAM at ADDR with data in <file>")
+    print("  -s, --ssid <SSID>       : set WiFi SSID")
+    print("  -o, --password <pwd>    : set WiFi Password")
 
 # main entry
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hp:bfr:w:", ["help", "port=", "battery", "flash", "read=", "write=","ps_rd=", "ps_wr="])
+        opts, args = getopt.getopt(sys.argv[1:], "hp:bfr:w:so", ["help", "port=", "battery", "flash", "read=", "write=","ps_rd=", "ps_wr=", "ssid", "password"])
     except getopt.GetoptError as err:
         # print help information and exit:
         print(err)  # will print something like "option -a not recognized"
@@ -198,6 +216,10 @@ if __name__ == "__main__":
         elif o in ("--ps_wr"):
             cmmd = 12
             psaddr = int(a)
+        elif o in ("-s", "--ssid"):
+            cmmd = 3
+        elif o in ("-o", "--password"):
+            cmmd = 4
         else:
             assert False, "unhandled option"
 
@@ -237,6 +259,10 @@ if __name__ == "__main__":
             print("missing write data")
     elif cmmd == 2:
         read_vbat(tty)
+    elif cmmd == 3:
+        send_cred(0, args[0], tty)
+    elif cmmd == 4:
+        send_cred(1, args[0], tty)
     else:
         assert False, "unknown command"
        

@@ -19,7 +19,6 @@
 #include "ice.h"
 #include "spiffs.h"
 #include "phy.h"
-#include "credentials.h"
 #include "adc_c3.h"
 
 static const char *TAG = "socket";

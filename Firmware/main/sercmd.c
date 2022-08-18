@@ -12,6 +12,7 @@
 #include "uart2.h"
 #include "rom/crc.h"
 #include "esp_vfs_usb_serial_jtag.h"
+#include "wifi.h"
 
 /* uncomment to turn on UART2 debugging */
 #define SERCMD_DBG
@@ -87,6 +88,18 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 	{
         /* Report Vbat */
         Data = 2*(uint32_t)adc_c3_get();
+	}
+	else if(cmd == 3)
+	{
+        /* Set SSID */
+        if(wifi_set_credentials(0, (char *)buffer) != ESP_OK)
+			err |= 1;
+	}
+	else if(cmd == 4)
+	{
+        /* Set Password */
+        if(wifi_set_credentials(1, (char *)buffer) != ESP_OK)
+			err |= 1;
 	}
 	else
 	{

@@ -17,12 +17,6 @@ jobs:
       run: |
         sed -i -e 's/#spiffs_create_partition_image/spiffs_create_partition_image/' main/CMakeLists.txt
 
-    - name: Create Fake Wifi Credentials
-      working-directory: Firmware
-      shell: bash
-      run: |
-        cp main/credentials_template.h main/credentials.h
-
     - name: esp-idf build
       uses: espressif/esp-idf-ci-action@v1
       with:

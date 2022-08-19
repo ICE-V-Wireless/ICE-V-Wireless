@@ -126,8 +126,8 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 	else
 	{
 		/* For most commands send reply as text */
-		uart2_printf("short reply: %02X %08X\r\n", err, Data);
-		fprintf(stdout, "%02X %08X\n", err, Data);
+		uart2_printf("short reply: RX %02X %08X\r\n", err, Data);
+		fprintf(stdout, "  RX %02X %08X\n", err, Data);
 	}
 }
 
@@ -306,6 +306,9 @@ esp_err_t sercmd_init(void)
 	/* turn off console logging so we can use the console for command/data */
     ESP_LOGW(TAG, "!!!Disabling Logging!!!!");
 	esp_log_level_set("*", ESP_LOG_NONE);
+	
+	/* flush any crud out of stdout */
+	fprintf(stdout, "\n\n\n");
 
 #ifdef SERCMD_DBG
 	/* init a secondary UART for debugging */

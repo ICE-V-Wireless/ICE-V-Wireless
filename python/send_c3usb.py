@@ -31,17 +31,29 @@ def sendall(tty, buffer):
 def recv(tty, lenbytes):
     return tty.read(lenbytes)
 
-# receive a short reply with err status and 32-bit data as hex
+# receive a short reply with header, err status and 32-bit data as hex
 def recv_err_data(tty):
-    reply = tty.read(12)
-    if len(reply)==12:
+    reply = tty.read_until()
+    
+    # reply has to have at least 17 chars to be valid but sometimes
+    # has garbage from ESP32 logging at beginning
+    if len(reply) >= 17:
+        # convert binary to ascii string and tokenize
         rplystr = reply.decode('utf-8')
         rplytok = rplystr.split()
-        err = int(rplytok[0], 16)
-        data = int(rplytok[1], 16)
-        return err, data
+
+        # search tokens for reply header
+        for tokidx in range(len(rplytok)):
+            if rplytok[tokidx] == 'RX':
+                # found header so return happy
+                err = int(rplytok[tokidx+1], 16)
+                data = int(rplytok[tokidx+2], 16)
+                return err, data
+        else:
+            # didn't find header
+            return 64, 0
     else:
-        # didn't get a valid reply so set an error and null data
+        # too short
         return 32, 0
     
 # send a file for direct load to FPGA or write to SPIFFS
@@ -226,7 +238,7 @@ if __name__ == "__main__":
     # try to open the port and run the command
     tty = serial.Serial(port)
     tty.timeout = 2 # -f option can be very slow
-    
+
     # check for non-option arg
     if cmmd > 13:
         # bitstream file handler

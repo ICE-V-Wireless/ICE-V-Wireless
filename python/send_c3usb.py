@@ -186,7 +186,7 @@ def usage():
     print("  -r, --read=REG          : register to read")
     print("  -w, --write=REG DATA    : register to write and data to write")
     #print("      --ps_rd=ADDR LEN    : read PSRAM at ADDR for LEN to stdout")
-    #print("      --ps_wr=ADDR <file> : write PSRAM at ADDR with data in <file>")
+    print("      --ps_wr=ADDR <file> : write PSRAM at ADDR with data in <file>")
     print("  -s, --ssid <SSID>       : set WiFi SSID")
     print("  -o, --password <pwd>    : set WiFi Password")
 
@@ -247,13 +247,10 @@ if __name__ == "__main__":
         else:
             print("missing filename")
     elif cmmd == 12:
-        if 0:
-            if len(args) > 0:
-                psram_write(psaddr, args[0], tty)
-            else:
-                 print("missing filename")
+        if len(args) > 0:
+            psram_write(psaddr, args[0], tty)
         else:
-            print("Not yet supported")
+             print("missing filename")
     elif cmmd == 11:
         if 0:
             if len(args) > 0:

@@ -19,7 +19,6 @@
 #include "ice.h"
 #include "spiffs.h"
 #include "phy.h"
-#include "credentials.h"
 #include "adc_c3.h"
 
 static const char *TAG = "socket";
@@ -211,24 +210,33 @@ static void do_getmsg(const int sock)
 							cmd = header.words[0] & 0xF;
 							txsz = header.words[1];
 							ESP_LOGI(TAG, "State 0: Found header: cmd %1X, txsz = %d", cmd, txsz);
-							                            
-							/* allocate a buffer for the data */
-							filebuffer = malloc(txsz);
-							if(filebuffer)
-							{
-								/* save any remaining data in buffer */
-								fptr = filebuffer;
-								sz = rxleft;
-								sz = sz <= txsz ? sz : txsz;
-								memcpy(fptr, rx_buffer+rxidx, sz);
-								//ESP_LOGI(TAG, "State 0: got %d, used %d", rxleft, sz);
-								fptr += sz;
-								tot += sz;
-								rxleft -= sz;
+							
+							/* lock resources */
+							if(xSemaphoreTake(ice_mutex, (TickType_t)100)==pdTRUE)
+							{							
+								/* allocate a buffer for the data */
+								filebuffer = malloc(txsz);
+								if(filebuffer)
+								{
+									/* save any remaining data in buffer */
+									fptr = filebuffer;
+									sz = rxleft;
+									sz = sz <= txsz ? sz : txsz;
+									memcpy(fptr, rx_buffer+rxidx, sz);
+									//ESP_LOGI(TAG, "State 0: got %d, used %d", rxleft, sz);
+									fptr += sz;
+									tot += sz;
+									rxleft -= sz;
+								}
+								else
+								{
+									ESP_LOGW(TAG, "Couldn't alloc buffer");
+									err |= 1;
+								}
 							}
 							else
 							{
-								ESP_LOGW(TAG, "Couldn't alloc buffer");
+								ESP_LOGW(TAG, "Couldn't get FPGA access");
 								err |= 1;
 							}
 							
@@ -243,7 +251,10 @@ static void do_getmsg(const int sock)
 								/* free the buffer */
 								free(filebuffer);
 								filebuffer = NULL;
-
+								
+								/* unlock resources */
+								xSemaphoreGive(ice_mutex);
+								
 								/* advance to complete state */
 								state = 2;
 							}
@@ -297,6 +308,9 @@ static void do_getmsg(const int sock)
 								/* free the buffer */
 								free(filebuffer);
 								filebuffer = NULL;
+								
+								/* unlock resources */
+								xSemaphoreGive(ice_mutex);
 								
 								/* advance state */
 								state = 2;

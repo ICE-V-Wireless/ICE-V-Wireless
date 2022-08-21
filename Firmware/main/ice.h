@@ -7,6 +7,9 @@
 #define __ICE__
 
 #include "main.h"
+#include "esp_event.h"
+
+extern xSemaphoreHandle ice_mutex;
 
 void ICE_Init(void);
 uint8_t ICE_FPGA_Config(uint8_t *bitmap, uint32_t size);

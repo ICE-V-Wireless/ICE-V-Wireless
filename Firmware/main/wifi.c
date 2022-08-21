@@ -16,12 +16,14 @@
 #include "lwip/sockets.h"
 #include "lwip/netdb.h"
 #include "phy.h"
-#include "credentials.h"
 #include "socket.h"
 #include "mdns.h"
 #include "esp_idf_version.h"
+#include "uart2.h"
 
 static const char *TAG = "wifi";
+#define DEFAULT_WIFI_SSID "MY_SSID"
+#define DEFAULT_WIFI_PASSWORD "MY_PASSWORD"
 
 /******************************************************************************/
 /* Basic WiFi connection                                                      */
@@ -94,9 +96,15 @@ static void on_wifi_disconnect(void *arg, esp_event_base_t event_base,
     ESP_ERROR_CHECK(err);
 }
 
+/*
+ * start WiFi up with stored credentials
+ */
 static esp_netif_t *wifi_start(void)
 {
+	esp_err_t err;
     char *desc;
+	
+	/* init wifi */
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
@@ -116,14 +124,67 @@ static esp_netif_t *wifi_start(void)
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
     wifi_config_t wifi_config = {
         .sta = {
-            .ssid = CONFIG_EXAMPLE_WIFI_SSID,
-            .password = CONFIG_EXAMPLE_WIFI_PASSWORD,
+            .ssid = DEFAULT_WIFI_SSID,
+            .password = DEFAULT_WIFI_PASSWORD,
             .scan_method = EXAMPLE_WIFI_SCAN_METHOD,
             .sort_method = EXAMPLE_WIFI_CONNECT_AP_SORT_METHOD,
             .threshold.rssi = CONFIG_EXAMPLE_WIFI_SCAN_RSSI_THRESHOLD,
             .threshold.authmode = EXAMPLE_WIFI_SCAN_AUTH_MODE_THRESHOLD,
         },
     };
+	
+	/* set credentials */
+	nvs_handle_t my_handle;
+    err = nvs_open("credentials", NVS_READWRITE, &my_handle);
+    if(err != ESP_OK)
+	{
+        ESP_LOGW(TAG, "wifi_start: Error (%s) opening NVS", esp_err_to_name(err));
+    }
+	else
+	{
+		size_t cred_len;
+		uint8_t commit = 0;
+		
+		/* get SSID */
+		cred_len = 32; 	// size of wifi_config.sta.ssid array
+		err = nvs_get_blob(my_handle, "ssid", wifi_config.sta.ssid, &cred_len);
+		if(err == ESP_ERR_NVS_NOT_FOUND)
+		{
+			err = nvs_set_blob(my_handle, "ssid", DEFAULT_WIFI_SSID, cred_len);
+			ESP_LOGI(TAG, "Created default ssid = %s, err = %s", DEFAULT_WIFI_SSID, esp_err_to_name(err));
+			commit = 1;
+		}
+		else if(err != ESP_OK)
+		{
+			ESP_LOGE(TAG, "Error getting ssid: %s", esp_err_to_name(err));
+		}
+		else
+			ESP_LOGI(TAG, "Found ssid = %s", wifi_config.sta.ssid);
+		
+		/* get password */
+		cred_len = 64; 	// size of wifi_config.sta.password array
+		err = nvs_get_blob(my_handle, "password", wifi_config.sta.password, &cred_len);
+		if(err == ESP_ERR_NVS_NOT_FOUND)
+		{
+			err = nvs_set_blob(my_handle, "password", DEFAULT_WIFI_PASSWORD, cred_len);
+			ESP_LOGI(TAG, "Created default password = %s, err = %s", DEFAULT_WIFI_PASSWORD, esp_err_to_name(err));
+			commit = 1;
+		}
+		else if(err != ESP_OK)
+		{
+			ESP_LOGE(TAG, "Unknown error getting password: %s", esp_err_to_name(err));
+		}
+		else
+			ESP_LOGI(TAG, "Found password");
+		
+		if(commit)
+		{
+			err = nvs_commit(my_handle);
+			ESP_LOGI(TAG, "commit: err = %s", esp_err_to_name(err));
+		}
+		
+		nvs_close(my_handle);
+	}
 	
 	/* spritetm's workaround for auto USB disable - does this work? */
 	ESP_LOGI(TAG, "Attempting to re-enable USB");
@@ -135,7 +196,7 @@ static esp_netif_t *wifi_start(void)
     ESP_ERROR_CHECK(esp_wifi_start());
 	
     esp_wifi_connect();
-
+	
     return netif;
 }
 
@@ -165,12 +226,17 @@ static void start(void)
     s_semph_get_ip_addrs = xSemaphoreCreateCounting(NR_OF_IP_ADDRESSES_TO_WAIT_FOR, 0);
 }
 
-/* tear down connection, release resources */
+/*
+ * tear down connection, release resources
+ */
 static void stop(void)
 {
     wifi_stop();
 }
 
+/*
+ * manage network startup for wifi, with timeout
+ */
 esp_err_t example_connect(void)
 {
     if (s_semph_get_ip_addrs != NULL) {
@@ -179,9 +245,17 @@ esp_err_t example_connect(void)
     start();
     ESP_ERROR_CHECK(esp_register_shutdown_handler(&stop));
     ESP_LOGI(TAG, "Waiting for IP(s)");
-    for (int i = 0; i < NR_OF_IP_ADDRESSES_TO_WAIT_FOR; ++i) {
-        xSemaphoreTake(s_semph_get_ip_addrs, portMAX_DELAY);
+    for (int i = 0; i < NR_OF_IP_ADDRESSES_TO_WAIT_FOR; ++i)
+	{
+		/* wait up to 10 sec for WiFi to connect */
+        if(xSemaphoreTake(s_semph_get_ip_addrs, 10000/portTICK_PERIOD_MS) != pdTRUE)
+		{
+            ESP_LOGW(TAG, "Failed to connect");
+			stop();
+			return ESP_FAIL;
+		}
     }
+	
     // iterate over active interfaces, and print out IPs of "our" netifs
     esp_netif_t *netif = NULL;
     esp_netif_ip_info_t ip;
@@ -202,23 +276,25 @@ esp_err_t example_connect(void)
  */
 esp_err_t wifi_init(void)
 {
-	esp_err_t ret = ESP_OK;
-	
 	/* minimum stuff needed for IPV4 WiFi connection */
     ESP_ERROR_CHECK(nvs_flash_init());
 	ESP_ERROR_CHECK(esp_netif_init());
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
-	ESP_ERROR_CHECK(example_connect());
-	
-	//initialize mDNS service
-    ESP_ERROR_CHECK( mdns_init() );
-	ESP_ERROR_CHECK( mdns_hostname_set("ICE-V") );
-	ESP_ERROR_CHECK( mdns_instance_name_set("ESP32C3 + FPGA") );
-    ESP_ERROR_CHECK( mdns_service_add(NULL, "_FPGA", "_tcp", 3333, NULL, 0)  );
-	
-	/* whatever else you want running on top of WiFi */
-	xTaskCreate(socket_task, "socket", 4096, (void*)AF_INET, 5, NULL);
-	return ret;
+	if(example_connect() == ESP_OK)
+	{
+		//initialize mDNS service
+		ESP_ERROR_CHECK( mdns_init() );
+		ESP_ERROR_CHECK( mdns_hostname_set("ICE-V") );
+		ESP_ERROR_CHECK( mdns_instance_name_set("ESP32C3 + FPGA") );
+		ESP_ERROR_CHECK( mdns_service_add(NULL, "_FPGA", "_tcp", 3333, NULL, 0)  );
+		
+		/* whatever else you want running on top of WiFi */
+		xTaskCreate(socket_task, "socket", 4096, (void*)AF_INET, 5, NULL);
+		
+		return ESP_OK;
+	}
+	else
+		return ESP_FAIL;
 }
 
 /*
@@ -229,4 +305,47 @@ int8_t wifi_get_rssi(void)
 	wifi_ap_record_t ap;
 	esp_wifi_sta_get_ap_info(&ap);
 	return ap.rssi;
+}
+
+/*
+ * update credentials in nvs
+ */
+esp_err_t wifi_set_credentials(uint8_t cred_type, char *cred_value)
+{
+	if(cred_type > 1)
+	{
+		uart2_printf("wifi_set_credentials: illegal credential type %d\r\n",
+			cred_type);
+		return ESP_FAIL;
+	}
+	
+	size_t cred_len = cred_type ? 64 : 32;
+	if((strlen(cred_value)+1) >= cred_len)
+	{
+        uart2_printf("wifi_set_credentials: illegal credential length %d\r\n",
+			(strlen(cred_value)+1));
+		return ESP_FAIL;
+	}
+	
+	nvs_handle_t my_handle;
+	esp_err_t err;
+    if((err = nvs_open("credentials", NVS_READWRITE, &my_handle)) != ESP_OK)
+	{
+        uart2_printf("wifi_set_credentials: Error (%s) opening NVS\r\n",
+			esp_err_to_name(err));
+		return ESP_FAIL;
+    }
+		
+	char *cred_key = cred_type ? "password" : "ssid";
+	if((err = nvs_set_blob(my_handle, cred_key, cred_value, cred_len)) == ESP_OK)
+	{
+		uart2_printf("wifi_set_credentials: Wrote %s = %s, err = %s\r\n",
+			cred_key, cred_value, esp_err_to_name(err));
+		err = nvs_commit(my_handle);
+		uart2_printf("wifi_set_credentials: commit: err = %s\r\n", esp_err_to_name(err));
+	}
+	
+	nvs_close(my_handle);
+
+	return ESP_OK;
 }

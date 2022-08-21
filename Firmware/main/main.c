@@ -11,13 +11,14 @@
 #include "spiffs.h"
 #include "wifi.h"
 #include "adc_c3.h"
+#include "sercmd.h"
 
 #define LED_PIN 10
 
 static const char* TAG = "main";
 
 /* build version in simple format */
-const char *fwVersionStr = "V0.1";
+const char *fwVersionStr = "0.2";
 const char *cfg_file = "/spiffs/bitstream.bin";
 
 /* build time */
@@ -26,6 +27,8 @@ const char *btime = __TIME__;
 
 void app_main(void)
 {
+	uint32_t blink_period = 500;
+	
 	/* Startup */
     ESP_LOGI(TAG, "-----------------------------");
     ESP_LOGI(TAG, "ICE-V Wireless starting...");
@@ -40,29 +43,25 @@ void app_main(void)
 	ICE_Init();
     ESP_LOGI(TAG, "FPGA SPI port initialized");
 	
-#if 1
 	/* configure FPGA from SPIFFS file */
     ESP_LOGI(TAG, "Reading file %s", cfg_file);
 	uint8_t *bin = NULL;
 	uint32_t sz;
 	if(!spiffs_read((char *)cfg_file, &bin, &sz))
 	{
-		uint8_t cfg_stat;	
-#if 0
-		/* configure FPGA from const array */
-		if((cfg_stat = ICE_FPGA_Config(bin, sz)))
-			ESP_LOGW(TAG, "FPGA configured ERROR - status = %d", cfg_stat);
-		else
-			ESP_LOGI(TAG, "FPGA configured OK - status = %d", cfg_stat);
-#else
+		uint8_t cfg_stat;
+		
 		/* loop on config failure */
-		while((cfg_stat = ICE_FPGA_Config(bin, sz)))
+		int8_t retry = 4;
+		while((cfg_stat = ICE_FPGA_Config(bin, sz)) && (retry--))
 			ESP_LOGW(TAG, "FPGA configured ERROR - status = %d", cfg_stat);
-		ESP_LOGI(TAG, "FPGA configured OK - status = %d", cfg_stat);
-#endif
+		if(retry)
+			ESP_LOGI(TAG, "FPGA configured OK - status = %d", cfg_stat);
+		else
+			ESP_LOGW(TAG, "FPGA configured ERROR - giving up");
+
 		free(bin);
 	}
-#endif
 
     /* init ADC for Vbat readings */
     if(!adc_c3_init())
@@ -73,10 +72,22 @@ void app_main(void)
 #if 1
 	/* init WiFi & socket */
 	if(!wifi_init())
+	{
 		ESP_LOGI(TAG, "WiFi Running");
+		blink_period = 100;
+	}
 	else
 		ESP_LOGE(TAG, "WiFi Init Failed");
 #endif
+	
+#if 1
+	/* start up USB/serial command handler */
+	if(!sercmd_init())
+		ESP_LOGI(TAG, "Serial Command Running");
+	else
+		ESP_LOGE(TAG, "Serial Command Init Failed");
+#endif
+		
 	
 	/* wait here forever and blink */
     ESP_LOGI(TAG, "Looping...", btime);
@@ -85,17 +96,16 @@ void app_main(void)
 	while(1)
 	{
 		gpio_set_level(LED_PIN, i&1);
-		//printf("%d\n", i);
-		//printf("Vbat = %d mV\n", 2*adc_c3_get());
 		
 		if((i&15)==0)
 		{
-			ESP_LOGI(TAG, "free heap: %d",esp_get_free_heap_size());
-			ESP_LOGI(TAG, "RSSI: %d", wifi_get_rssi());
+			//ESP_LOGI(TAG, "free heap: %d",esp_get_free_heap_size());
+			//ESP_LOGI(TAG, "RSSI: %d", wifi_get_rssi());
+			//ESP_LOGI(TAG, "Vbat = %d mV", 2*adc_c3_get());
 		}
 		
 		i++;
 		
-		vTaskDelay(100 / portTICK_PERIOD_MS);
+		vTaskDelay(blink_period / portTICK_PERIOD_MS);
 	}
 }

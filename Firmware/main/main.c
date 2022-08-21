@@ -18,7 +18,7 @@
 static const char* TAG = "main";
 
 /* build version in simple format */
-const char *fwVersionStr = "V0.1";
+const char *fwVersionStr = "0.2";
 const char *cfg_file = "/spiffs/bitstream.bin";
 
 /* build time */
@@ -27,6 +27,8 @@ const char *btime = __TIME__;
 
 void app_main(void)
 {
+	uint32_t blink_period = 500;
+	
 	/* Startup */
     ESP_LOGI(TAG, "-----------------------------");
     ESP_LOGI(TAG, "ICE-V Wireless starting...");
@@ -70,7 +72,10 @@ void app_main(void)
 #if 1
 	/* init WiFi & socket */
 	if(!wifi_init())
+	{
 		ESP_LOGI(TAG, "WiFi Running");
+		blink_period = 100;
+	}
 	else
 		ESP_LOGE(TAG, "WiFi Init Failed");
 #endif
@@ -101,6 +106,6 @@ void app_main(void)
 		
 		i++;
 		
-		vTaskDelay(100 / portTICK_PERIOD_MS);
+		vTaskDelay(blink_period / portTICK_PERIOD_MS);
 	}
 }

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # add a header to a file and send it to the ICE-V Wireless via USB/Serial
 # 08-12-22 E. Brombaugh
 
@@ -35,6 +35,7 @@ def recv(tty, lenbytes):
 # receive a short reply with header, err status and 32-bit data as hex
 def recv_err_data(tty):
     reply = tty.read_until()
+    #print(reply)
     
     # reply has to have at least 17 chars to be valid but sometimes
     # has garbage from ESP32 logging at beginning

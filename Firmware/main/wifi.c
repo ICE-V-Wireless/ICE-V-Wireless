@@ -151,7 +151,7 @@ static esp_netif_t *wifi_start(void)
 		if(err == ESP_ERR_NVS_NOT_FOUND)
 		{
 			err = nvs_set_blob(my_handle, "ssid", DEFAULT_WIFI_SSID, cred_len);
-			ESP_LOGI(TAG, "Created ssid = %s, err = %s", DEFAULT_WIFI_SSID, esp_err_to_name(err));
+			ESP_LOGI(TAG, "Created default ssid = %s, err = %s", DEFAULT_WIFI_SSID, esp_err_to_name(err));
 			commit = 1;
 		}
 		else if(err != ESP_OK)
@@ -167,7 +167,7 @@ static esp_netif_t *wifi_start(void)
 		if(err == ESP_ERR_NVS_NOT_FOUND)
 		{
 			err = nvs_set_blob(my_handle, "password", DEFAULT_WIFI_PASSWORD, cred_len);
-			ESP_LOGI(TAG, "Created password = %s, err = %s", DEFAULT_WIFI_PASSWORD, esp_err_to_name(err));
+			ESP_LOGI(TAG, "Created default password = %s, err = %s", DEFAULT_WIFI_PASSWORD, esp_err_to_name(err));
 			commit = 1;
 		}
 		else if(err != ESP_OK)
@@ -175,7 +175,7 @@ static esp_netif_t *wifi_start(void)
 			ESP_LOGE(TAG, "Unknown error getting password: %s", esp_err_to_name(err));
 		}
 		else
-			ESP_LOGI(TAG, "Found password = %s", wifi_config.sta.password);
+			ESP_LOGI(TAG, "Found password");
 		
 		if(commit)
 		{

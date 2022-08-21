@@ -44,16 +44,17 @@ line, along with power, ground and reset connections.
 [![.github/workflows/build-firmware.yml](https://github.com/ICE-V-Wireless/ICE-V-Wireless/actions/workflows/build-firmware.yml/badge.svg)](https://github.com/ICE-V-Wireless/ICE-V-Wireless/actions/workflows/build-firmware.yml)
 
 The ESP32 firmware is written in C with the ESP-IDF V5.0 toolchain and
-libraries. Initially it provides a TCP socket interface over WiFi with the
+libraries. It provides both a USB and a TCP socket interface over WiFi with the
 following features:
 * Initial loading of the FPGA configuration at powerup from a SPIFFS filesystem
 contained in the ESP32C3F[H/N]4 flash. 
 <br/>(See [Page 9 of the ESP32-C3 Series Datasheet](https://www.espressif.com/sites/default/files/documentation/esp32-c3_datasheet_en.pdf#page=9)
 for part number details).
-* WiFi socket-based "instant" loading of configurations direct to the FPGA.
-* WiFi socket-based updating of the configuration stored in SPIFFS.
-* WiFi socket-based monitor/control of the FPGA design via SPI.
-* WiFi socket-based monitor of LiPo battery voltage (requires added solder blob).
+* USB and WiFi "instant" loading of configurations direct to the FPGA.
+* USB and WiFi updating of the configuration stored in SPIFFS.
+* USB and WiFi monitor/control of the FPGA design via SPI.
+* USB and WiFi monitor of LiPo battery voltage.
+* USB setting of WiFi credentials (SSID and Password)
 
 ## Gateware
 
@@ -64,7 +65,7 @@ SPI monitor/control via SPI with a flashing LED. More advanced designs are
 possible.
 
 ## Host-side Utilities
-A command-line Python script is provided to communicate over TCP sockets
+Command-line Python scripts are provided to communicate over USB and WiFi
 with the ESP32C3 which supports the features outlined in the Firmware section
 above.
 

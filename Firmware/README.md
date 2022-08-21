@@ -1,8 +1,9 @@
-# Firmware
-This directory contains the ESP32 C3 firmware for the ESP32C3 FPGA board. The
-default firmware supports power-on initialization of the ICE40UP5k FPGA as well
-as wireless programming of the FPGA, SPI access after configuration, PSRAM access
-and battery voltage monitoring.
+# Firmware Version 0.2
+This directory contains the ESP32 C3 firmware for the ICE-V-Wireless board. The
+default firmware supports power-on initialization of the ICE40UP5k FPGA, as well
+as USB Serial and WiFi programming of the FPGA, SPI access after configuration,
+PSRAM access and battery voltage monitoring. Additionally, the WiFi credentials
+can be set via USB Serial.
 
 ## Prerequisites
 
@@ -10,10 +11,8 @@ and battery voltage monitoring.
 Prior to building this firmware you'll need to have a working installation of the
 Espressif ESP32 IDF toolchain. Unfortunately there are many different versions
 available and not all components and features used here are compatible across
-them all. This project was initially built against an intermediate release of
-unstable V5.0 that has been changing quickly and doesn't play nicely with some
-developers tools like VSCode so it's best to fall back to the V4.4.2 stable
-release. You can find it here:
+them all. This project was built against the V4.4.2 stable release.
+You can find it here:
 
 https://github.com/espressif/esp-idf
 
@@ -23,15 +22,6 @@ installation and setup steps.
 NOTE: The github CI process for this repo uses a Docker image for esp-idf that's
 provided by Espressif and appears to contain a late version of V4.4.1 that
 does work but requires some preprocessor fiddling to get full function.
-
-## Provisioning
-At this time the ESP32C3 FPGA firmware does not automatically handle WiFi
-provisioning so the SSID and password of the local WiFi router must be provided
-at compile time. To do this you must follow these steps:
-
-1) copy the file `main/credentials_template.h` to `main/credentials.h`
-2) edit the `main/credentials.h` file to reflect the proper SSID and password for
-your network
 
 ## Building
 ### First build
@@ -75,13 +65,46 @@ idf.py -p <serial device> monitor
 ```
 to view this information.
 
+### NOTE
+Enabling the monitor function interferes with the USB Serial command/configuration
+utility. If you intend to use USB Serial to communicate with the ICE-V-Wireless
+board then *DO NOT USE* the IDF monitoring utility at the same time.
+
+## USB Operation
+Connect the ICE-V-Wireless board to a host computer via the USB cable to provide
+power and wired communication. A Python script `send_c3usb.py` is provided which
+presents a user-friendly command line interface and is described in more detail
+here:
+[python utility](../python/README.md)
+
+## WiFi Provisioning
+At compile time the firmware has "safe" default WiFi credentials that will
+likely not work with any real network:
+* SSID = "MY_SSID"
+* Password = "MY_PASSWORD"
+
+In order to set values for your network you should use the USB Serial
+command-line Python script for communicating with the board. The script
+can be found in the `python` directory of this repository. The syntax for
+setting values is:
+
+`send_c3usb.py --ssid <YOUR SSID>`
+`send_c3usb.py --password <YOUR PASSWORD>`
+
+After successfully executing these commands without errors you should then push
+the `RST` button on the ICE-V-Wireless board to let it join your network. When
+the LED is flashing at a quick ~5Hz rate you will know that the board was able
+to successfully join the network. A slow ~1Hz rate indicates that only the
+USB Serial interface is active.
+
 ## IP Addressing
 This firmware uses DHCP and mDNS to request an IP address from the router on the
-WiFi network and to advertise the address and its specific service/socket. If your
-system doesn't support mDNS then you'll need to query your DHCP server to
-find the IP address that it assigned to the ICE-V.
+WiFi network and to advertise the address and its specific service/socket. The
+ICE-V-Wireless board can be found at `ICE-V.local`. If your system doesn't
+support mDNS then you'll need to query your DHCP server to find the IP address
+that it assigned to the client with the hostname 'espressif'.
 
-## Operation
+## WiFi Operation
 Once the firmware is running and connected to a WiFi network it creates a TCP
 socket on port 3333 which can be accessed without any security measures by any
 peer on the network. The socket accepts commands of the form

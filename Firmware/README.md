@@ -89,6 +89,7 @@ can be found in the `python` directory of this repository. The syntax for
 setting values is:
 
 `send_c3usb.py --ssid <YOUR SSID>`
+
 `send_c3usb.py --password <YOUR PASSWORD>`
 
 After successfully executing these commands without errors you should then push

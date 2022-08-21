@@ -7,6 +7,7 @@ import os
 import getopt
 import time
 import serial
+import base64
 
 # convert a command nybble into a 32-bit magic value for the header
 def make_magic(cmmd):
@@ -155,10 +156,32 @@ def psram_read(psaddr, numbytes, tty):
     
     # send to the C3 over usb
     sendall(tty, payload)
-    reply = recv(tty, len+1)
-    if reply[0] :
-        print("Error", reply[0])
-    sys.stdout.buffer.write(reply[1:])
+    go = 1
+    while go:
+        reply = tty.read_until()
+        #print(reply)
+        rplystr = reply.decode('utf-8')
+        rplytok = rplystr.split()
+
+        # search tokens for reply header
+        for tokidx in range(len(rplytok)):
+            if rplytok[tokidx] == 'RX':
+                # found header so return happy
+                addr = int(rplytok[tokidx+1], 16)
+                data_len = int(rplytok[tokidx+2], 16)
+                if (addr == 0xffffffff) and (data_len == 70):
+                    go = 0
+                else:
+                    decode_data = base64.b64decode(rplytok[tokidx+3])
+                    #print("addr", addr, "data len", data_len, "data", rplytok[tokidx+3])
+                    sys.stdout.buffer.write(decode_data)
+                break
+            
+        if tokidx == len(rplytok):
+            # didn't find header
+            print("No header")
+            go = 0
+    return
 
 # send credentials (ssid or password)
 def send_cred(cred_type, cred_value, tty):
@@ -185,7 +208,7 @@ def usage():
     print("  -f, --flash=<file>      : write <file> to SPIFFS flash")
     print("  -r, --read=REG          : register to read")
     print("  -w, --write=REG DATA    : register to write and data to write")
-    #print("      --ps_rd=ADDR LEN    : read PSRAM at ADDR for LEN to stdout")
+    print("      --ps_rd=ADDR LEN    : read PSRAM at ADDR for LEN to stdout")
     print("      --ps_wr=ADDR <file> : write PSRAM at ADDR with data in <file>")
     print("  -s, --ssid <SSID>       : set WiFi SSID")
     print("  -o, --password <pwd>    : set WiFi Password")
@@ -252,7 +275,7 @@ if __name__ == "__main__":
         else:
              print("missing filename")
     elif cmmd == 11:
-        if 0:
+        if 1:
             if len(args) > 0:
                 psram_read(psaddr, int(args[0]), tty)
             else:

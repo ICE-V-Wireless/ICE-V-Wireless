@@ -13,6 +13,7 @@
 #include "rom/crc.h"
 #include "esp_vfs_usb_serial_jtag.h"
 #include "wifi.h"
+#include "mbedtls/base64.h"
 
 /* uncomment to turn on UART2 debugging */
 #define SERCMD_DBG
@@ -30,8 +31,6 @@ static const uint8_t cmdheader[4] =
 void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 {
 	uint32_t Data = 0;
-	uint8_t *psram_rdbuf = NULL;
-	uint32_t psram_rdsz = 0;
 	uint8_t err = 0, cfg_stat;	
 	
 	uart2_printf("sercmd_handle: cmd %d, bufsz %d\r\n", cmd, txsz);
@@ -58,17 +57,26 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 	{
 		/* read block of data from PSRAM via SPI pass-thru */
 		uint32_t Addr = *((uint32_t *)buffer);
-		psram_rdsz = *((uint32_t *)(buffer+4));
-		psram_rdbuf = malloc(psram_rdsz+1);	// extra byte at start for err status
-		if(psram_rdbuf)
+#define MAX_RDSZ 64
+		uint8_t psram_rdbuf[MAX_RDSZ];
+		uint32_t psram_rdsz = *((uint32_t *)(buffer+4));
+		unsigned char output[2*MAX_RDSZ];
+		size_t outlen;
+		while(psram_rdsz)
 		{
-			ICE_PSRAM_Read(Addr, (uint8_t *)psram_rdbuf+1, psram_rdsz);
+			uint32_t rdsz = psram_rdsz > MAX_RDSZ ? MAX_RDSZ : psram_rdsz;
+			ICE_PSRAM_Read(Addr, (uint8_t *)psram_rdbuf, rdsz);
+			mbedtls_base64_encode(output, 2*MAX_RDSZ, &outlen, psram_rdbuf, rdsz);
+			output[outlen] = 0;
+			uart2_printf("  RX %08X %02X %s\r\n", Addr, rdsz, output);
+			fprintf(stdout, "  RX %08X %02X %s\n", Addr, rdsz, output);
+			Addr += rdsz;
+			psram_rdsz -= rdsz;
 		}
-		else
-		{
-			psram_rdsz = 0;
-			err |= 8;
-		}
+		
+		/* end condition */
+		uart2_printf("  RX %08X %02X\r\n", -1, 70);
+		fprintf(stdout, "  RX %08X %02X\n", -1, 70);
 	}
 	else if(cmd == 0)
 	{
@@ -108,22 +116,7 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 	}
 
 	/* reply with error status */
-	if((cmd == 0x0b) && (psram_rdbuf))
-	{
-		/* PSRAM Read cmd can return a lot of data */
-		int to_write = psram_rdsz+1;
-		psram_rdbuf[0] = err;	// prepend err status
-		uint8_t *wbuf = psram_rdbuf;
-		while(to_write-- > 0)
-		{
-			fputc(*wbuf++, stdout);
-		}
-		
-		/* done with read buffer */
-		free(psram_rdbuf);
-		psram_rdsz = 0;
-	}
-	else
+	if(cmd == !0x0b)
 	{
 		/* For most commands send reply as text */
 		uart2_printf("short reply: RX %02X %08X\r\n", err, Data);

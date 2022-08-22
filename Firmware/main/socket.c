@@ -35,8 +35,6 @@ static void handle_message(const int sock, char *err, char cmd, char *buffer, in
 {
 	uint32_t Data = 0;
 	char sbuf[5];
-	uint8_t *psram_rdbuf = NULL;
-	uint32_t psram_rdsz = 0;
 	
 	if(cmd == 0xf)
 	{
@@ -73,18 +71,41 @@ static void handle_message(const int sock, char *err, char cmd, char *buffer, in
 	{
 		/* read block of data from PSRAM via SPI pass-thru */
 		uint32_t Addr = *((uint32_t *)buffer);
-		psram_rdsz = *((uint32_t *)(buffer+4));
-		psram_rdbuf = malloc(psram_rdsz+1);	// extra byte at start for err status
-		if(psram_rdbuf)
+		uint32_t psram_rdsz = *((uint32_t *)(buffer+4));
+#define MAX_PSRAM_RD 128		
+		uint8_t psram_rdbuf[MAX_PSRAM_RD];
+		
+		ESP_LOGI(TAG, "PSRAM read: Addr 0x%08X, Len 0x%08X", Addr, psram_rdsz);
+		
+		/* Send error status */
+		int written;
+		while((written = send(sock, err, 1, 0)) < 1)
 		{
-			ESP_LOGI(TAG, "PSRAM read: Addr 0x%08X, Len 0x%08X", Addr, psram_rdsz);
-			ICE_PSRAM_Read(Addr, (uint8_t *)psram_rdbuf+1, psram_rdsz);
+			if(written < 0)
+			{
+				ESP_LOGE(TAG, "Error sending stat: errno %d", errno);
+			}
 		}
-		else
+		
+		/* Send data MAX_PSRAM_RD bytes at a time */
+		while(psram_rdsz)
 		{
-			ESP_LOGW(TAG, "PSRAM read error - couldn't alloc buffer size %d", psram_rdsz+1);
-			psram_rdsz = 0;
-			*err |= 8;
+			uint32_t rdsz = psram_rdsz > MAX_PSRAM_RD ? MAX_PSRAM_RD : psram_rdsz;
+			ICE_PSRAM_Read(Addr, (uint8_t *)psram_rdbuf, rdsz);
+			int to_write = rdsz;
+			uint8_t *wptr = psram_rdbuf;
+			while(to_write > 0)
+			{
+				written = send(sock, wptr, to_write, 0);
+				if(written < 0)
+				{
+					ESP_LOGE(TAG, "Error sending data: errno %d", errno);
+				}
+				to_write -= written;
+				wptr += written;
+			}
+			psram_rdsz -= rdsz;
+			Addr += rdsz;
 		}
 	}
 	else if(cmd == 0)
@@ -130,30 +151,7 @@ static void handle_message(const int sock, char *err, char cmd, char *buffer, in
 		*err |= 8;
 	}
 	
-	/* reply with error status */
-	ESP_LOGI(TAG, "Replying with %d", *err);
-	if((cmd == 0x0b) && (psram_rdbuf))
-	{
-		/* PSRAM Read cmd can return a lot of data */
-		// send() can return less bytes than supplied length.
-		// Walk-around for robust implementation.
-		int to_write = psram_rdsz+1;
-		psram_rdbuf[0] = *err;	// prepend err status
-		uint8_t *wbuf = psram_rdbuf;
-		while (to_write > 0) {
-			int written = send(sock, wbuf, to_write, 0);
-			if (written < 0) {
-				ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
-			}
-			to_write -= written;
-			wbuf += written;
-		}
-		
-		/* done with read buffer */
-		free(psram_rdbuf);
-		psram_rdsz = 0;
-	}
-	else if(cmd == 5)
+	if((cmd == 0x0b) || (cmd == 5))
 	{
 		/* do nothing */
 	}
@@ -174,6 +172,9 @@ static void handle_message(const int sock, char *err, char cmd, char *buffer, in
 			to_write -= written;
 		}
 	}
+	
+	/* reply with error status */
+	ESP_LOGI(TAG, "Reply status = %d", *err);
 }
 
 /*

@@ -136,22 +136,35 @@ def psram_write(psaddr, name, addr, port):
             s.close()
 
 # read psram to stdout
-def psram_read(psaddr, len, addr, port):
+def psram_read(psaddr, dlen, addr, port):
     magic = make_magic(11)
     size = 8
     size_bytes = size.to_bytes(4, byteorder = 'little')
     psaddr_bytes = psaddr.to_bytes(4, byteorder = 'little')
-    len_bytes = len.to_bytes(4, byteorder = 'little')
-    payload = b"".join([magic, size_bytes, psaddr_bytes, len_bytes])
+    dlen_bytes = dlen.to_bytes(4, byteorder = 'little')
+    payload = b"".join([magic, size_bytes, psaddr_bytes, dlen_bytes])
     
     # send to the socket server on the C3
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((addr, port))
         s.sendall(payload)
-        reply = s.recv(len+1)
-        if reply[0] :
-            print("Error", reply[0])
-        sys.stdout.buffer.write(reply[1:])
+        rxlen = 0
+        while rxlen < dlen+1:
+            reply = s.recv(65)
+            if rxlen == 0:
+                # check for error
+                if reply[0]:
+                    print("Error", reply[0])
+                    return
+                
+                # trim off error byte
+                rxlen = rxlen + 1
+                reply = reply[1:]
+            
+            if len(reply):
+                sys.stdout.buffer.write(reply)
+            rxlen = rxlen + len(reply)
+            
         s.close()
 
 # usage text for command line

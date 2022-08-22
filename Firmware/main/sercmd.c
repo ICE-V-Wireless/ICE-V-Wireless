@@ -16,7 +16,7 @@
 #include "mbedtls/base64.h"
 
 /* uncomment to turn on UART2 debugging */
-#define SERCMD_DBG
+//#define SERCMD_DBG
 
 static const char* TAG = "sercmd";
 

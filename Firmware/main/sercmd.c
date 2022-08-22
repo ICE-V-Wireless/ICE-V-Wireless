@@ -16,7 +16,7 @@
 #include "mbedtls/base64.h"
 
 /* uncomment to turn on UART2 debugging */
-//#define SERCMD_DBG
+#define SERCMD_DBG
 
 static const char* TAG = "sercmd";
 
@@ -109,6 +109,12 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
         if(wifi_set_credentials(1, (char *)buffer) != ESP_OK)
 			err |= 1;
 	}
+	else if(cmd == 5)
+	{
+        /* Report version and IP addr */
+		uart2_printf("  RX %02X %s %s\r\n", err, fwVersionStr, wifi_ip_addr);
+		fprintf(stdout, "  RX %02X %s %s\n", err, fwVersionStr, wifi_ip_addr);
+	}
 	else
 	{
 		/* unknown command */
@@ -116,7 +122,7 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 	}
 
 	/* reply with error status */
-	if(cmd != 0x0b)
+	if((cmd != 0x0b) && (cmd != 5))
 	{
 		/* For most commands send reply as text */
 		uart2_printf("short reply: RX %02X %08X\r\n", err, Data);

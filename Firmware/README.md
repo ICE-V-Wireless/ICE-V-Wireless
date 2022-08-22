@@ -102,8 +102,12 @@ USB Serial interface is active.
 This firmware uses DHCP and mDNS to request an IP address from the router on the
 WiFi network and to advertise the address and its specific service/socket. The
 ICE-V-Wireless board can be found at `ICE-V.local`. If your system doesn't
-support mDNS then you'll need to query your DHCP server to find the IP address
-that it assigned to the client with the hostname 'espressif'.
+support mDNS then you'll need to determine the assigned IP address by one of
+the following methods:
+* Use the USB Serial python script to report the IP address with the command
+`send_c3usb.py --info`.
+* Query your DHCP server to find the IP address that it assigned to the client
+with the hostname 'espressif'.
 
 ## WiFi Operation
 Once the firmware is running and connected to a WiFi network it creates a TCP

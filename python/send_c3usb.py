@@ -28,18 +28,13 @@ def sendall(tty, buffer):
         with open("dump.bin", "wb") as binary_file:
             binary_file.write(buffer)
 
-# receive a buffer of data from the tty
-def recv(tty, lenbytes):
-    return tty.read(lenbytes)
-
-# receive a short reply with header, err status and 32-bit data as hex
-def recv_err_data(tty):
+# receive error and tokens
+def recv_err_tokens(tty):
     reply = tty.read_until()
-    #print(reply)
-    
-    # reply has to have at least 17 chars to be valid but sometimes
+
+    # reply has to have at least 6 chars to be valid but sometimes
     # has garbage from ESP32 logging at beginning
-    if len(reply) >= 17:
+    if len(reply) >= 6:
         # convert binary to ascii string and tokenize
         rplystr = reply.decode('utf-8')
         rplytok = rplystr.split()
@@ -49,14 +44,22 @@ def recv_err_data(tty):
             if rplytok[tokidx] == 'RX':
                 # found header so return happy
                 err = int(rplytok[tokidx+1], 16)
-                data = int(rplytok[tokidx+2], 16)
-                return err, data
+                return err, rplytok[tokidx+2:]
         else:
             # didn't find header
             return 64, 0
     else:
         # too short
         return 32, 0
+
+# receive a short reply with header, err status and 32-bit data as hex
+def recv_err_data(tty):
+    err, toks = recv_err_tokens(tty)
+    if err:
+        return err, 0;
+    else:
+        if len(toks) == 1:
+            return err, int(toks[0], 16)
     
 # send a file for direct load to FPGA or write to SPIFFS
 def send_file(name, cmmd, tty):
@@ -122,6 +125,25 @@ def read_vbat(tty):
         print("Error", err)
     else:
         print("Vbat =", data, "mV")
+    
+# send a read info command
+def read_info(tty):
+    magic = make_magic(5)
+    regsz = 4
+    reg = 0
+    size = regsz.to_bytes(4, byteorder = 'little')
+    payload = b"".join([magic, size, reg.to_bytes(4, byteorder = 'little')])
+    
+    # send to the C3 over usb
+    sendall(tty, payload)
+    err, toks = recv_err_tokens(tty)
+    if err:
+        print("Error", err)
+    else:
+        if len(toks) == 2:
+            print("Version", toks[0], ", IP Addr", toks[1])
+        else:
+            print("Error")
     
 # write file to psram
 def psram_write(psaddr, name, tty):
@@ -207,6 +229,7 @@ def usage():
     print("  -p, --port=<tty>        : usb tty of ESP32C3 (default /dev/ttyACM0)")
     print("  -b, --battery           : report battery voltage (in millivolts)")
     print("  -f, --flash=<file>      : write <file> to SPIFFS flash")
+    print("  -i, --info              : get info (version, IP addr)")
     print("  -r, --read=REG          : register to read")
     print("  -w, --write=REG DATA    : register to write and data to write")
     print("      --ps_rd=ADDR LEN    : read PSRAM at ADDR for LEN to stdout")
@@ -217,7 +240,10 @@ def usage():
 # main entry
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hp:bfr:w:so", ["help", "port=", "battery", "flash", "read=", "write=","ps_rd=", "ps_wr=", "ssid", "password"])
+        opts, args = getopt.getopt(sys.argv[1:], \
+            "hp:bfir:w:so", \
+            ["help", "port=", "battery", "flash", "info", "read=", "write=", \
+             "ps_rd=", "ps_wr=", "ssid", "password"])
     except getopt.GetoptError as err:
         # print help information and exit:
         print(err)  # will print something like "option -a not recognized"
@@ -238,6 +264,8 @@ if __name__ == "__main__":
             port = a
         elif o in ("-b", "--battery"):
             cmmd = 2
+        elif o in ("-i", "--info"):
+            cmmd = 5
         elif o in ("-f", "--flash"):
             cmmd = 14
         elif o in ("-r", "--read"):
@@ -296,6 +324,8 @@ if __name__ == "__main__":
         send_cred(0, args[0], tty)
     elif cmmd == 4:
         send_cred(1, args[0], tty)
+    elif cmmd == 5:
+        read_info(tty)
     else:
         assert False, "unknown command"
        

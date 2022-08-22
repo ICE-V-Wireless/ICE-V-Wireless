@@ -8,6 +8,8 @@
 
 #include "main.h"
 
+extern char wifi_ip_addr[32];
+
 esp_err_t wifi_init(void);
 int8_t wifi_get_rssi(void);
 esp_err_t wifi_set_credentials(uint8_t cred_type, char *cred_value);

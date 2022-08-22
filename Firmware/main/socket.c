@@ -108,6 +108,22 @@ static void handle_message(const int sock, char *err, char cmd, char *buffer, in
         Data = 2*(uint32_t)adc_c3_get();
 		ESP_LOGI(TAG, "Vbat = %d mV", Data);
 	}
+	else if(cmd == 5)
+	{
+        /* Report Info */
+        char infostr[64];
+		infostr[0] = *err;		
+		sprintf(infostr+1, "%s %s", fwVersionStr, wifi_ip_addr);
+		ESP_LOGI(TAG, "Info = %s", infostr+1);
+		int to_write = strlen(infostr+1)+1;
+		while (to_write > 0) {
+			int written = send(sock, infostr, to_write, 0);
+			if (written < 0) {
+				ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+			}
+			to_write -= written;
+		}
+	}
 	else
 	{
 		ESP_LOGI(TAG, "Unknown command");
@@ -136,6 +152,10 @@ static void handle_message(const int sock, char *err, char cmd, char *buffer, in
 		/* done with read buffer */
 		free(psram_rdbuf);
 		psram_rdsz = 0;
+	}
+	else if(cmd == 5)
+	{
+		/* do nothing */
 	}
 	else
 	{

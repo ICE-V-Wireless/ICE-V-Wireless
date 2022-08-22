@@ -69,7 +69,7 @@ def write_reg(reg, data, addr, port):
             print("Error", reply[0])
         s.close()
 
-# send a read command plus register address
+# send a battery command plus dummy address
 def read_vbat():
     magic = make_magic(2)
     regsz = 4
@@ -86,6 +86,27 @@ def read_vbat():
             print("Error", reply[0])
         else:
             print("Vbat =", int.from_bytes(reply[1:4], byteorder='little'), "mV")
+        s.close()
+
+# send an info command plus dummy address
+def read_info():
+    magic = make_magic(5)
+    regsz = 4
+    reg = 0
+    size = regsz.to_bytes(4, byteorder = 'little')
+    payload = b"".join([magic, size, reg.to_bytes(4, byteorder = 'little')])
+    
+    # send to the socket server on the C3
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((addr, port))
+        s.sendall(payload)
+        reply = s.recv(1024)
+        if reply[0]!= 0 :
+            print("Error", reply[0])
+        else:
+            rplystr = reply[1:].decode('utf-8')
+            rplytok = rplystr.split()
+            print("Version =", rplytok[0], ", IP Addr =", rplytok[1])
         s.close()
 
 # write file to psram
@@ -140,6 +161,7 @@ def usage():
     print("  -a, --address=ip_addr   : address of ESP32C3 (default ICE-V.local)")
     print("  -b, --battery           : report battery voltage (in millivolts)")
     print("  -f, --flash <file>      : write <file> to SPIFFS flash")
+    print("  -i, --info              : get info (version, IP addr)")
     print("  -p, --port=portnum      : port of FPGA load (default 3333)")
     print("  -r, --read=REG          : register to read")
     print("  -w, --write=REG DATA    : register to write and data to write")
@@ -149,7 +171,10 @@ def usage():
 # main entry
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "ha:bfp:r:w:", ["help", "address=", "battery", "flash", "port=", "read=", "write=","ps_rd=", "ps_wr="])
+        opts, args = getopt.getopt(sys.argv[1:], \
+            "ha:bfip:r:w:", \
+            ["help", "address=", "battery", "flash", "info", "port=", \
+             "read=", "write=","ps_rd=", "ps_wr="])
     except getopt.GetoptError as err:
         # print help information and exit:
         print(err)  # will print something like "option -a not recognized"
@@ -171,6 +196,8 @@ if __name__ == "__main__":
             addr = a
         elif o in ("-b", "--battery"):
             cmmd = 2
+        elif o in ("-i", "--info"):
+            cmmd = 5
         elif o in ("-f", "--flash"):
             cmmd = 14
         elif o in ("-p", "--port"):
@@ -216,6 +243,10 @@ if __name__ == "__main__":
             print("missing write data")
     elif cmmd == 2:
         read_vbat()
+    elif cmmd == 5:
+        read_info()
+    else:
+        assert False, "unhandled option"
 
 
 

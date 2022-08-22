@@ -32,6 +32,7 @@ static int s_active_interfaces = 0;
 static xSemaphoreHandle s_semph_get_ip_addrs;
 static esp_netif_t *s_example_esp_netif = NULL;
 
+char wifi_ip_addr[32];
 
 #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 4, 2)
 // there's an include for this in V4.4.2 and beyond
@@ -266,6 +267,7 @@ esp_err_t example_connect(void)
             ESP_ERROR_CHECK(esp_netif_get_ip_info(netif, &ip));
 
             ESP_LOGI(TAG, "- IPv4 address: " IPSTR, IP2STR(&ip.ip));
+			sprintf(wifi_ip_addr, IPSTR, IP2STR(&ip.ip));
         }
     }
     return ESP_OK;
@@ -276,6 +278,9 @@ esp_err_t example_connect(void)
  */
 esp_err_t wifi_init(void)
 {
+	/* default wifi IP */
+	strcpy(wifi_ip_addr, "unavailable");
+	
 	/* minimum stuff needed for IPV4 WiFi connection */
     ESP_ERROR_CHECK(nvs_flash_init());
 	ESP_ERROR_CHECK(esp_netif_init());

@@ -18,6 +18,7 @@ send_c3usb.py [options] [<file>] | [DATA]
   -p, --port=<tty>        : usb tty of ESP32C3 (default /dev/ttyACM0)
   -b, --battery           : report battery voltage (in millivolts)
   -f, --flash=<file>      : write <file> to SPIFFS flash
+  -i, --info              : get info (version, IP addr)
   -r, --read=REG          : register to read
   -w, --write=REG DATA    : register to write and data to write
       --ps_rd=ADDR LEN    : read PSRAM at ADDR for LEN to stdout
@@ -45,6 +46,13 @@ To get the current LiPo batter voltage value in millivolts
 
 ```
 send_c3usb.py --battery
+```
+
+### Read Info
+To get the firmware version and WiFi IP address
+
+```
+send_c3usb.py --info
 ```
 
 ### Read a SPI register
@@ -129,6 +137,7 @@ send_c3sock.py [options] [<file>] | [DATA]
   -a, --address=ip_addr   : address of ESP32C3 (default ICE-V.local)
   -b, --battery           : report battery voltage (in millivolts)
   -f, --flash <file>      : write <file> to SPIFFS flash
+  -i, --info              : get info (version, IP addr)
   -p, --port=portnum      : port of FPGA load (default 3333)
   -r, --read=REG          : register to read
   -w, --write=REG DATA    : register to write and data to write
@@ -155,6 +164,13 @@ To get the current LiPo batter voltage value in millivolts
 
 ```
 send_c3sock.py --battery
+```
+
+### Read Info
+To get the firmware version and WiFi IP address
+
+```
+send_c3sock.py --info
 ```
 
 ### Read a SPI register

@@ -6,6 +6,84 @@ communicate with the ICE-V Wireless board over USB and WiFi.
 The scripts require Python 3 and use modules that should be available with most
 common installations so they should run "out of the box" with no special effort.
 
+## Running under various OSes
+These utility scripts are built with Python for maximum cross-platform useability,
+however there are still some notable differences in how they can be used. Here
+are some usage notes for different operating systems.
+
+### Linux
+Linux is the "native" system under which these scripts were developed and as a
+result this will be the smoothest use-case. No special effort should be required
+aside from properly determining which TTY device maps to the USB Serial port of
+ICE-V board
+
+### Mac OS
+In general Mac OS behaves very similarly to Linux when running Python scripts. On
+older versions it may be necessary to install Python 3, but simple packages are
+available directly from Python.org
+
+https://www.python.org/downloads/macos/
+
+Once that has been installed you may also need to install the Pyserial module
+
+`pip3 install pyserial`
+
+Then it will likely be necessary to prefix the commands with `python3` to ensure
+the correct version & location is used.
+
+Determining the serial device name for Mac OS can be a bit challenging. The
+easiest approach is to list the serial device before and after plugging in the
+USB cable and using the one that appears:
+
+`ls /dev/c*`
+
+Then use that as an argument to the USB script. For example:
+
+`python3 ./send_c3usb.py -p /dev/tty.cxxx -i`
+
+### Windows
+Windows is the most problematic OS for these scripts, but it can work with some
+care.
+
+First, you'll need to install Python 3 from the Windows marketplace. It's
+possible to install by downloading from Python.org, but experience shows that
+doesn't always result in success due to the way environment variables are set up.
+The simple approach on Windows 11 is to open a Command prompt and type:
+
+`python.exe`
+
+If Python is not installed then a window will open offering to install it.
+Follow the instructions to complete the install.
+
+Once Python is installed and working from the Windows Command prompt it will be
+necessary to install the pyserial module:
+
+`pip3 install pyserial`
+
+At this point python should be properly set up and you should be able to run
+the scripts from within the `python` directory of this repo by prepending
+`python3` to the scripts.
+
+Determining the serial port to use can be difficult. Use the Device Manager to
+find the COM port that's added when the ICE-V is plugged in and use that with
+the port option of the USB Serial script:
+
+`python3 send_c3usb.py -p COMx -i`
+
+where `COMx` is the port name you discovered in the Device Manager.
+
+#### Note
+There is a quirk in the Windows Pyserial module that causes the ICE-V board to
+reset at the completion of every command received from the USB Serial script. It
+will be necessary to wait several seconds for the green activity LED to start
+flashing again after every command sent via the USB serial script.
+
+When using the WiFi script it may be necessary to explicitly provide the IPV4
+address of the device. Using the `-i` command from the USB Serial script you
+can determine the IPV4 address and then provide that to the WiFi script:
+
+`python3 send_c3sock.py -a <YOUR_IP_ADDR> -b`
+
 ## USB Serial
 The script `send_c3usb.py` communicates with the ICE-V-Wireless board via
 USB and requires only that you attach the board to a host computer and wait

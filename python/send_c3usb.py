@@ -155,18 +155,28 @@ def psram_write(psaddr, name, tty):
         file.seek(0, os.SEEK_SET)
         print("Size of", name, "is", file_len, "bytes")
 
-        # add the header with command
+        # iterate over max 64kB chunks
         magic = make_magic(12)
-        size = file_len + 4
-        size_bytes = size.to_bytes(4, byteorder = 'little')
-        psaddr_bytes = psaddr.to_bytes(4, byteorder = 'little')
-        payload = b"".join([magic, size_bytes, psaddr_bytes, file.read(file_len)])
+        remain_len = file_len
+        while remain_len:
+            send_len = min(remain_len, 65536)
+        
+            # add the header with command
+            size = send_len + 4
+            size_bytes = size.to_bytes(4, byteorder = 'little')
+            psaddr_bytes = psaddr.to_bytes(4, byteorder = 'little')
+            payload = b"".join([magic, size_bytes, psaddr_bytes, file.read(send_len)])
 
-        # send to the C3 over usb
-        sendall(tty, payload)
-        err, data = recv_err_data(tty)
-        if err:
-            print("Error", err)
+            # send to the C3 over usb
+            print("PS_WR: sending packet @", psaddr, " len", send_len)
+            sendall(tty, payload)
+            err, data = recv_err_data(tty)
+            if err:
+                print("Error", err)
+
+            # update for next iteration
+            remain_len = remain_len - send_len
+            psaddr = psaddr + send_len
 
 # read psram to stdout
 def psram_read(psaddr, numbytes, tty):

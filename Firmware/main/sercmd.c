@@ -228,44 +228,76 @@ void sercmd_task(void *pvParameters)
 						{							
 							/* alloc buffer for payload */
 							buffer = malloc(buffsz);
-							bufptr = buffer;
 							
-							/* buffer at a time - USB does 64 bytes max */
-							int bytes, timeout = 0;
-							while(cmdsz)
+							if(buffer)
 							{
-								bytes = read(STDIN_FILENO, bufptr, cmdsz);
-								if(bytes>0)
+								/* if malloc succeeded then fill the buffer */
+								bufptr = buffer;
+								
+								/* buffer at a time - USB does 64 bytes max */
+								int bytes, timeout = 0;
+								while(cmdsz)
 								{
-									bufptr += bytes;
-									cmdsz -= bytes;
-									timeout = 0;	// reset timeout
+									bytes = read(STDIN_FILENO, bufptr, cmdsz);
+									if(bytes>0)
+									{
+										bufptr += bytes;
+										cmdsz -= bytes;
+										timeout = 0;	// reset timeout
+									}
+									
+									/* don't hang if data ceases unexpectedly */
+									if(timeout++ > 1000)
+									{
+										uart2_printf("timeout waiting for payload\r\n");
+										cmdval = 16;	// force illegal command
+										break;
+									}
+									
+									/*
+									 * was thinking of putting a vTaskDelay() here
+									 * but it would likely slow things down too
+									 * much.
+									 */
 								}
 								
-								/* don't hang if data ceases unexpectedly */
-								if(timeout++ > 1000)
-								{
-									uart2_printf("timeout waiting for payload\r\n");
-									cmdval = 16;	// force illegal command
-									break;
-								}
+								//dump_buffer(buffer, buffsz);
 								
-								/*
-								 * was thinking of putting a vTaskDelay() here
-								 * but it would likely slow things down too
-								 * much.
-								 */
+								/* handle command */
+								sercmd_handle(cmdval, buffer, buffsz);
+								
+								/* clean up */
+								free(buffer);
+								buffsz = 0;
+								cmdstate = 0;
 							}
-							
-							//dump_buffer(buffer, buffsz);
-							
-							/* handle command */
-							sercmd_handle(cmdval, buffer, buffsz);
-							
-							/* clean up */
-							free(buffer);
-							buffsz = 0;
-							cmdstate = 0;
+							else
+							{
+								/* malloc failed - flush stdin */
+								uart2_printf("malloc failed - flushing\r\n");
+								int bytes, timeout = 0;
+								uint8_t dummy_buf[64];
+								while(cmdsz)
+								{
+									int fsz = cmdsz > 64 ? 64 : cmdsz;
+									bytes = read(STDIN_FILENO, dummy_buf, fsz);
+									if(bytes>0)
+									{
+										cmdsz -= bytes;
+										timeout = 0;	// reset timeout
+									}
+									
+									/* don't hang if data ceases unexpectedly */
+									if(timeout++ > 1000)
+									{
+										uart2_printf("timeout waiting for payload\r\n");
+										break;
+									}
+								}
+								
+								/* send error reply */
+								fprintf(stdout, "  RX %02X %08X\n", 7, 0);
+							}
 							
 							/* unlock resources */
 							xSemaphoreGive(ice_mutex);

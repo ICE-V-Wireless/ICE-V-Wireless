@@ -119,21 +119,31 @@ def psram_write(psaddr, name, addr, port):
         file.seek(0, os.SEEK_SET)
         print("Size of", name, "is", file_len, "bytes")
 
-        # add the header with command
+        # iterate over max 64kB chunks
         magic = make_magic(12)
-        size = file_len + 4
-        size_bytes = size.to_bytes(4, byteorder = 'little')
-        psaddr_bytes = psaddr.to_bytes(4, byteorder = 'little')
-        payload = b"".join([magic, size_bytes, psaddr_bytes, file.read(file_len)])
+        remain_len = file_len
+        while remain_len:
+            send_len = min(remain_len, 65536)
+        
+            # add the header with command
+            size = send_len + 4
+            size_bytes = size.to_bytes(4, byteorder = 'little')
+            psaddr_bytes = psaddr.to_bytes(4, byteorder = 'little')
+            payload = b"".join([magic, size_bytes, psaddr_bytes, file.read(send_len)])
 
-        # send to the socket server on the C3
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((addr, port))
-            s.sendall(payload)
-            reply = s.recv(1024)
-            if reply[0] :
-                print("Error", reply[0])
-            s.close()
+            # send to the socket server on the C3
+            print("PS_WR: sending packet @", psaddr, " len", send_len)
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((addr, port))
+                s.sendall(payload)
+                reply = s.recv(1024)
+                if reply[0] :
+                    print("Error", reply[0])
+                s.close()
+
+            # update for next iteration
+            remain_len = remain_len - send_len
+            psaddr = psaddr + send_len
 
 # read psram to stdout
 def psram_read(psaddr, dlen, addr, port):

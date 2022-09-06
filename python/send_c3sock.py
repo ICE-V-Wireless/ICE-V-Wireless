@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # add a header to a file and send it to the ESP32C3 FPGA socket
 # 04-07-22 E. Brombaugh
 

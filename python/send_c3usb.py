@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # add a header to a file and send it to the ICE-V Wireless via USB/Serial
 # 08-12-22 E. Brombaugh
 

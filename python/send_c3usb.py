@@ -8,6 +8,15 @@ import getopt
 import time
 import serial
 import base64
+from serial.tools import list_ports
+
+# get ESP32C3 serial port
+def get_C3_port():
+    port = list(list_ports.grep("303a:1001"))
+    if len(port) > 0:
+        return port[0][0]
+    else:
+        return 'none'
 
 # convert a command nybble into a 32-bit magic value for the header
 def make_magic(cmmd):
@@ -261,7 +270,11 @@ if __name__ == "__main__":
         sys.exit(2)
 
     # defaults
-    port = "/dev/ttyACM0"
+    port = get_C3_port()
+    if(port == 'none'):
+        print('No ESP32C3 attached')
+        sys.exit(2)
+    
     cmmd = 15
     reg = 0
     
@@ -296,6 +309,9 @@ if __name__ == "__main__":
             cmmd = 4
         else:
             assert False, "unhandled option"
+
+    # scan available ports
+    
 
     # try to open the port and run the command
     tty = serial.Serial(port)

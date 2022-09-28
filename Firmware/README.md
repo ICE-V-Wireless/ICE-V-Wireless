@@ -26,20 +26,17 @@ does work but requires some preprocessor fiddling to get full function.
 ## Building
 ### First build
 For the initial build it is necessary to install the SPIFFS filesystem that holds
-the default FPGA build. To do this it is necessary to uncomment a line in the
-`main/CMakeLists.txt` file which informs the build system to create and flash
-the filesystem into the ESP32C3 memory. Find the line
-
-```
-#spiffs_create_partition_image(storage ../spiffs FLASH_IN_PROJECT)
-```
-and remove the leading `#`
+the default FPGA build so as-shipped this process is enabled by default.
 
 ### Subsequent builds
 After the first build the SPIFFS filesystem will exist and the firmware will know
 where to find it so it's no longer necessary to recreate it every time the
-firmware is updated. Return to the `main/CMakeLists.txt` and add a `#` to the
-beginning of the above text line.
+firmware is updated. Edit the `main/CMakeLists.txt` and add a `#` to the
+beginning of the text line:
+
+```
+spiffs_create_partition_image(storage ../spiffs FLASH_IN_PROJECT)
+```
 
 ### How to build
 Use the normal IDF build command:

@@ -188,17 +188,27 @@ static esp_netif_t *wifi_start(void)
 	}
 	
 	/* spritetm's workaround for auto USB disable - does this work? */
-	ESP_LOGI(TAG, "Attempting to re-enable USB");
+	ESP_LOGI(TAG, "Preventing USB disable");
 	phy_bbpll_en_usb(true);
-
-    ESP_LOGI(TAG, "Connecting to %s...", wifi_config.sta.ssid);
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_start());
 	
-    esp_wifi_connect();
-	
-    return netif;
+	/* only attempt connect if not default credentials */
+    if(strncmp((char *)wifi_config.sta.ssid, DEFAULT_WIFI_SSID, 32) && 
+		strncmp((char *)wifi_config.sta.password, DEFAULT_WIFI_PASSWORD, 64))
+	{
+		ESP_LOGI(TAG, "Connecting to %s...", wifi_config.sta.ssid);
+		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+		ESP_ERROR_CHECK(esp_wifi_start());
+		
+		esp_wifi_connect();
+		
+		return netif;
+	}
+	else
+	{
+		ESP_LOGI(TAG, "Default Credentials Detected - Not Connecting");
+		return NULL;
+	}
 }
 
 static void wifi_stop(void)
@@ -221,10 +231,13 @@ static void wifi_stop(void)
 static void start(void)
 {
     s_example_esp_netif = wifi_start();
-    s_active_interfaces++;
+    if(s_example_esp_netif)
+	{
+		s_active_interfaces++;
 
-    /* create semaphore if at least one interface is active */
-    s_semph_get_ip_addrs = xSemaphoreCreateCounting(NR_OF_IP_ADDRESSES_TO_WAIT_FOR, 0);
+		/* create semaphore if at least one interface is active */
+		s_semph_get_ip_addrs = xSemaphoreCreateCounting(NR_OF_IP_ADDRESSES_TO_WAIT_FOR, 0);
+	}
 }
 
 /*
@@ -244,33 +257,38 @@ esp_err_t example_connect(void)
         return ESP_ERR_INVALID_STATE;
     }
     start();
-    ESP_ERROR_CHECK(esp_register_shutdown_handler(&stop));
-    ESP_LOGI(TAG, "Waiting for IP(s)");
-    for (int i = 0; i < NR_OF_IP_ADDRESSES_TO_WAIT_FOR; ++i)
+    if(s_active_interfaces)
 	{
-		/* wait up to 10 sec for WiFi to connect */
-        if(xSemaphoreTake(s_semph_get_ip_addrs, 10000/portTICK_PERIOD_MS) != pdTRUE)
+		ESP_ERROR_CHECK(esp_register_shutdown_handler(&stop));
+		ESP_LOGI(TAG, "Waiting for IP(s)");
+		for (int i = 0; i < NR_OF_IP_ADDRESSES_TO_WAIT_FOR; ++i)
 		{
-            ESP_LOGW(TAG, "Failed to connect");
-			stop();
-			return ESP_FAIL;
+			/* wait up to 10 sec for WiFi to connect */
+			if(xSemaphoreTake(s_semph_get_ip_addrs, 10000/portTICK_PERIOD_MS) != pdTRUE)
+			{
+				ESP_LOGW(TAG, "Failed to connect");
+				stop();
+				return ESP_FAIL;
+			}
 		}
-    }
-	
-    // iterate over active interfaces, and print out IPs of "our" netifs
-    esp_netif_t *netif = NULL;
-    esp_netif_ip_info_t ip;
-    for (int i = 0; i < esp_netif_get_nr_of_ifs(); ++i) {
-        netif = esp_netif_next(netif);
-        if (is_our_netif(TAG, netif)) {
-            ESP_LOGI(TAG, "Connected to %s", esp_netif_get_desc(netif));
-            ESP_ERROR_CHECK(esp_netif_get_ip_info(netif, &ip));
+		
+		// iterate over active interfaces, and print out IPs of "our" netifs
+		esp_netif_t *netif = NULL;
+		esp_netif_ip_info_t ip;
+		for (int i = 0; i < esp_netif_get_nr_of_ifs(); ++i) {
+			netif = esp_netif_next(netif);
+			if (is_our_netif(TAG, netif)) {
+				ESP_LOGI(TAG, "Connected to %s", esp_netif_get_desc(netif));
+				ESP_ERROR_CHECK(esp_netif_get_ip_info(netif, &ip));
 
-            ESP_LOGI(TAG, "- IPv4 address: " IPSTR, IP2STR(&ip.ip));
-			sprintf(wifi_ip_addr, IPSTR, IP2STR(&ip.ip));
-        }
-    }
-    return ESP_OK;
+				ESP_LOGI(TAG, "- IPv4 address: " IPSTR, IP2STR(&ip.ip));
+				sprintf(wifi_ip_addr, IPSTR, IP2STR(&ip.ip));
+			}
+		}
+		return ESP_OK;
+	}
+	else
+		return ESP_FAIL;
 }
 
 /*

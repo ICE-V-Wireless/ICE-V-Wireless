@@ -16,5 +16,7 @@
 
 extern const char *fwVersionStr;
 extern const char *cfg_file;
+extern const char *spipass_file;
+extern const char *psram_file;
 
 #endif

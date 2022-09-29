@@ -50,6 +50,29 @@ esp_err_t spiffs_init(void)
 }
 
 /*
+ * get file size
+ */
+esp_err_t spiffs_get_fsz(char *fname, uint32_t *len)
+{
+	esp_err_t stat = ESP_OK;
+	FILE* f = fopen(fname, "rb");
+    if (f != NULL)
+	{
+		fseek(f, 0L, SEEK_END);
+		*len = ftell(f);
+		ESP_LOGI(TAG, "File size: %d", *len);
+		fclose(f);
+	}
+	else
+	{
+		ESP_LOGE(TAG, "Failed to open file %s for reading", fname);
+		stat = ESP_ERR_NOT_FOUND;
+    }
+	
+	return stat;
+}
+
+/*
  * read a file into a buffer
  */
 esp_err_t spiffs_read(char *fname, uint8_t **buffer, uint32_t *len)
@@ -84,7 +107,7 @@ esp_err_t spiffs_read(char *fname, uint8_t **buffer, uint32_t *len)
 	}
 	else
 	{
-		ESP_LOGE(TAG, "Failed to open file for reading");
+		ESP_LOGE(TAG, "Failed to open file %s for reading", fname);
 		stat = ESP_ERR_NOT_FOUND;
     }
 	

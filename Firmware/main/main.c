@@ -20,14 +20,52 @@ static const char* TAG = "main";
 /* build version in simple format */
 const char *fwVersionStr = "0.2";
 const char *cfg_file = "/spiffs/bitstream.bin";
+const char *spipass_file = "/spiffs/spi_pass.bin";
+const char *psram_file = "/spiffs/spipass.bin";
 
 /* build time */
 const char *bdate = __DATE__;
 const char *btime = __TIME__;
 
+/*
+ * common FPGA file loader
+ */
+esp_err_t load_fpga(const char *filename)
+{
+	uint8_t *bin = NULL;
+	uint32_t sz;
+	
+	ESP_LOGI(TAG, "Configuring FPGA from file %s", filename);
+	if(!spiffs_read((char *)filename, &bin, &sz))
+	{
+		uint8_t cfg_stat;
+		
+		/* loop on config failure */
+		int8_t retry = 4;
+		while((cfg_stat = ICE_FPGA_Config(bin, sz)) && (retry--))
+			ESP_LOGW(TAG, "FPGA configured ERROR - status = %d", cfg_stat);
+		if(retry)
+			ESP_LOGI(TAG, "FPGA configured OK - status = %d", cfg_stat);
+		else
+			ESP_LOGW(TAG, "FPGA configured ERROR - giving up");
+
+		free(bin);
+		
+		return ESP_OK;
+	}
+	
+	ESP_LOGI(TAG, "Configuration file %s not found", filename);
+	return ESP_FAIL;
+}
+
+/*
+ * entry point
+ */
 void app_main(void)
 {
 	uint32_t blink_period = 500;
+	uint8_t *bin = NULL;
+	uint32_t sz;
 	
 	/* Startup */
     ESP_LOGI(TAG, "-----------------------------");
@@ -43,26 +81,39 @@ void app_main(void)
 	ICE_Init();
     ESP_LOGI(TAG, "FPGA SPI port initialized");
 	
-	/* configure FPGA from SPIFFS file */
-    ESP_LOGI(TAG, "Reading file %s", cfg_file);
-	uint8_t *bin = NULL;
-	uint32_t sz;
-	if(!spiffs_read((char *)cfg_file, &bin, &sz))
+	/* preload PSRAM */
+    ESP_LOGI(TAG, "Pre-Loading PSRAM from file %s", psram_file);
+	if(!spiffs_get_fsz((char *)psram_file, &sz))
 	{
-		uint8_t cfg_stat;
-		
-		/* loop on config failure */
-		int8_t retry = 4;
-		while((cfg_stat = ICE_FPGA_Config(bin, sz)) && (retry--))
-			ESP_LOGW(TAG, "FPGA configured ERROR - status = %d", cfg_stat);
-		if(retry)
-			ESP_LOGI(TAG, "FPGA configured OK - status = %d", cfg_stat);
+		if(sz > 4)
+		{
+			/* preload FPGA with SPI Pass-thru design */
+			load_fpga(spipass_file);
+			
+			/* Get data from file and send */
+			if(!spiffs_read((char *)psram_file, &bin, &sz))
+			{
+				/* write block of data to PSRAM via SPI pass-thru */
+				uint32_t Addr = *((uint32_t *)bin);
+				ESP_LOGI(TAG, "PSRAM write: Addr 0x%08X, Len 0x%08X", Addr, sz-4);
+				ICE_PSRAM_Write(Addr, (uint8_t *)bin+4, sz-4);
+				
+				/* done */
+				free(bin);
+				ESP_LOGI(TAG, "PSRAM file read OK");
+			}
+			else
+				ESP_LOGI(TAG, "PSRAM file read error");
+		}
 		else
-			ESP_LOGW(TAG, "FPGA configured ERROR - giving up");
-
-		free(bin);
+			ESP_LOGI(TAG, "PSRAM file is empty");
 	}
-
+    else
+		ESP_LOGI(TAG, "PSRAM file not found");
+	
+	/* configure FPGA from SPIFFS file */
+	load_fpga(cfg_file);
+	
     /* init ADC for Vbat readings */
     if(!adc_c3_init())
         ESP_LOGI(TAG, "ADC Initialized");
@@ -80,7 +131,9 @@ void app_main(void)
 		ESP_LOGE(TAG, "WiFi Init Failed");
 #endif
 	
-#if 1
+	ESP_LOGI(TAG, "free heap: %d",esp_get_free_heap_size());
+	
+#if 0
 	/* start up USB/serial command handler */
 	if(!sercmd_init())
 		ESP_LOGI(TAG, "Serial Command Running");

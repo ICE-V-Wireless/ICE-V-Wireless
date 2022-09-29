@@ -54,11 +54,11 @@ static void handle_message(const int sock, char *err, char cmd, char *buffer, in
 		uint8_t cfg_stat;	
 		if((cfg_stat = spiffs_write((char *)cfg_file, (uint8_t *)buffer, txsz)))
 		{
-			ESP_LOGW(TAG, "SPIFFS Error - status = %d", cfg_stat);
+			ESP_LOGW(TAG, "Config write SPIFFS Error - status = %d", cfg_stat);
 			*err |= 8;
 		}
 		else
-			ESP_LOGI(TAG, "SPIFFS wrote OK - status = %d", cfg_stat);
+			ESP_LOGI(TAG, "Config write SPIFFS wrote OK - status = %d", cfg_stat);
 	}
 	else if(cmd == 0xc)
 	{
@@ -107,6 +107,18 @@ static void handle_message(const int sock, char *err, char cmd, char *buffer, in
 			psram_rdsz -= rdsz;
 			Addr += rdsz;
 		}
+	}
+	else if(cmd == 0xa)
+	{
+		/* save PSRAM data to the SPIFFS filesystem */
+		uint8_t cfg_stat;	
+		if((cfg_stat = spiffs_write((char *)psram_file, (uint8_t *)buffer, txsz)))
+		{
+			ESP_LOGW(TAG, "PSRAM write SPIFFS Error - status = %d", cfg_stat);
+			*err |= 8;
+		}
+		else
+			ESP_LOGI(TAG, "PSRAM write SPIFFS wrote OK - status = %d", cfg_stat);
 	}
 	else if(cmd == 0)
 	{

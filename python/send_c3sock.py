@@ -110,7 +110,7 @@ def read_info():
         s.close()
 
 # write file to psram
-def psram_write(psaddr, name, addr, port):
+def psram_write(cmd, psaddr, name, addr, port):
     # open file as binary
     with open(name, "rb") as file:
         # get length by seeking around
@@ -120,7 +120,7 @@ def psram_write(psaddr, name, addr, port):
         print("Size of", name, "is", file_len, "bytes")
 
         # iterate over max 64kB chunks
-        magic = make_magic(12)
+        magic = make_magic(cmd)
         remain_len = file_len
         while remain_len:
             send_len = min(remain_len, 65536)
@@ -132,7 +132,7 @@ def psram_write(psaddr, name, addr, port):
             payload = b"".join([magic, size_bytes, psaddr_bytes, file.read(send_len)])
 
             # send to the socket server on the C3
-            print("PS_WR: sending packet @", psaddr, " len", send_len)
+            print("psram_write: sending packet @", psaddr, " len", send_len)
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((addr, port))
                 s.sendall(payload)
@@ -190,6 +190,7 @@ def usage():
     print("  -w, --write=REG DATA    : register to write and data to write")
     print("      --ps_rd=ADDR LEN    : read PSRAM at ADDR for LEN to stdout")
     print("      --ps_wr=ADDR <file> : write PSRAM at ADDR with data in <file>")
+    print("      --ps_in=ADDR <file> : write PSRAM init at ADDR with data in <file>")
 
 # main entry
 if __name__ == "__main__":
@@ -197,7 +198,7 @@ if __name__ == "__main__":
         opts, args = getopt.getopt(sys.argv[1:], \
             "ha:bfip:r:w:", \
             ["help", "address=", "battery", "flash", "info", "port=", \
-             "read=", "write=","ps_rd=", "ps_wr="])
+             "read=", "write=","ps_rd=", "ps_wr=", "ps_in="])
     except getopt.GetoptError as err:
         # print help information and exit:
         print(err)  # will print something like "option -a not recognized"
@@ -237,6 +238,9 @@ if __name__ == "__main__":
         elif o in ("--ps_wr"):
             cmmd = 12
             psaddr = int(a)
+        elif o in ("--ps_in"):
+            cmmd = 10
+            psaddr = int(a)
         else:
             assert False, "unhandled option"
     
@@ -247,9 +251,9 @@ if __name__ == "__main__":
             send_file(args[0], cmmd, addr, port)
         else:
             print("missing filename")
-    elif cmmd == 12:
+    elif (cmmd == 12) or (cmmd == 10):
         if len(args) > 0:
-            psram_write(psaddr, args[0], addr, port)
+            psram_write(cmmd, psaddr, args[0], addr, port)
         else:
              print("missing filename")
     elif cmmd == 11:

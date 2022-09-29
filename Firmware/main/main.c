@@ -133,7 +133,7 @@ void app_main(void)
 	
 	ESP_LOGI(TAG, "free heap: %d",esp_get_free_heap_size());
 	
-#if 0
+#if 1
 	/* start up USB/serial command handler */
 	if(!sercmd_init())
 		ESP_LOGI(TAG, "Serial Command Running");

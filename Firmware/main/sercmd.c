@@ -78,6 +78,12 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 		uart2_printf("  RX %08X %02X\r\n", -1, 70);
 		fprintf(stdout, "  RX %08X %02X\n", -1, 70);
 	}
+	else if(cmd == 0xa)
+	{
+		/* save PSRAM data to the SPIFFS filesystem */
+		if((cfg_stat = spiffs_write((char *)psram_file, (uint8_t *)buffer, txsz)))
+			err |= 8;
+	}
 	else if(cmd == 0)
 	{
         /* Read SPI register */

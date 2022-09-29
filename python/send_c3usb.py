@@ -155,7 +155,7 @@ def read_info(tty):
             print("Error")
     
 # write file to psram
-def psram_write(psaddr, name, tty):
+def psram_write(cmd, psaddr, name, tty):
     # open file as binary
     with open(name, "rb") as file:
         # get length by seeking around
@@ -165,7 +165,7 @@ def psram_write(psaddr, name, tty):
         print("Size of", name, "is", file_len, "bytes")
 
         # iterate over max 64kB chunks
-        magic = make_magic(12)
+        magic = make_magic(cmd)
         remain_len = file_len
         while remain_len:
             send_len = min(remain_len, 65536)
@@ -253,6 +253,7 @@ def usage():
     print("  -w, --write=REG DATA    : register to write and data to write")
     print("      --ps_rd=ADDR LEN    : read PSRAM at ADDR for LEN to stdout")
     print("      --ps_wr=ADDR <file> : write PSRAM at ADDR with data in <file>")
+    print("      --ps_in=ADDR <file> : write PSRAM init at ADDR with data in <file>")
     print("  -s, --ssid <SSID>       : set WiFi SSID")
     print("  -o, --password <pwd>    : set WiFi Password")
 
@@ -262,7 +263,7 @@ if __name__ == "__main__":
         opts, args = getopt.getopt(sys.argv[1:], \
             "hp:bfir:w:so", \
             ["help", "port=", "battery", "flash", "info", "read=", "write=", \
-             "ps_rd=", "ps_wr=", "ssid", "password"])
+             "ps_rd=", "ps_wr=", "ps_in=", "ssid", "password"])
     except getopt.GetoptError as err:
         # print help information and exit:
         print(err)  # will print something like "option -a not recognized"
@@ -302,6 +303,8 @@ if __name__ == "__main__":
             psaddr = int(a)
         elif o in ("--ps_wr"):
             cmmd = 12
+        elif o in ("--ps_in"):
+            cmmd = 10
             psaddr = int(a)
         elif o in ("-s", "--ssid"):
             cmmd = 3
@@ -324,9 +327,9 @@ if __name__ == "__main__":
             send_file(args[0], cmmd, tty)
         else:
             print("missing filename")
-    elif cmmd == 12:
+    elif (cmmd == 12) or (cmmd == 10):
         if len(args) > 0:
-            psram_write(psaddr, args[0], tty)
+            psram_write(cmmd, psaddr, args[0], tty)
         else:
              print("missing filename")
     elif cmmd == 11:

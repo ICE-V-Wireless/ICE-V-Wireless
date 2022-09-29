@@ -121,6 +121,14 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 		uart2_printf("  RX %02X %s %s\r\n", err, fwVersionStr, wifi_ip_addr);
 		fprintf(stdout, "  RX %02X %s %s\n", err, fwVersionStr, wifi_ip_addr);
 	}
+	else if(cmd == 6)
+	{
+        /* Load configuration */
+		uint8_t Reg = *(uint32_t *)buffer & 0x1;
+		uart2_printf("load cfg %d\r\n", Reg);
+		const char *file = (Reg==0) ? cfg_file : spipass_file;
+		load_fpga(file);
+	}
 	else
 	{
 		/* unknown command */

@@ -240,7 +240,19 @@ def send_cred(cred_type, cred_value, tty):
     if err:
         print("Error", err)
     
+# send a load command plus config ID
+def load_cfg(reg, tty):
+    magic = make_magic(6)
+    regsz = 4
+    size = regsz.to_bytes(4, byteorder = 'little')
+    payload = b"".join([magic, size, reg.to_bytes(4, byteorder = 'little')])
     
+    # send to the C3 over usb
+    sendall(tty, payload)
+    err, data = recv_err_data(tty)
+    if err:
+        print("Error", err)
+
 # usage text for command line
 def usage():
     print(sys.argv[0], " [options] [<file>] | [DATA] | [LEN] communicate with ESP32C3 FPGA")
@@ -249,6 +261,7 @@ def usage():
     print("  -b, --battery           : report battery voltage (in millivolts)")
     print("  -f, --flash=<file>      : write <file> to SPIFFS flash")
     print("  -i, --info              : get info (version, IP addr)")
+    print("  -l, --load=<cfg#>       : load config from SPIFFS (0=default, 1=spi_pass")
     print("  -r, --read=REG          : register to read")
     print("  -w, --write=REG DATA    : register to write and data to write")
     print("      --ps_rd=ADDR LEN    : read PSRAM at ADDR for LEN to stdout")
@@ -261,8 +274,9 @@ def usage():
 if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(sys.argv[1:], \
-            "hp:bfir:w:so", \
-            ["help", "port=", "battery", "flash", "info", "read=", "write=", \
+            "hp:bfil:r:w:so", \
+            ["help", "port=", "battery", "flash", "info", "load=", \
+             "read=", "write=", \
              "ps_rd=", "ps_wr=", "ps_in=", "ssid", "password"])
     except getopt.GetoptError as err:
         # print help information and exit:
@@ -292,6 +306,9 @@ if __name__ == "__main__":
             cmmd = 5
         elif o in ("-f", "--flash"):
             cmmd = 14
+        elif o in ("-l", "--load"):
+            reg = int(a) & 1
+            cmmd = 6
         elif o in ("-r", "--read"):
             reg = int(a)
             cmmd = 0
@@ -355,6 +372,8 @@ if __name__ == "__main__":
         send_cred(1, args[0], tty)
     elif cmmd == 5:
         read_info(tty)
+    elif cmmd == 6:
+        load_cfg(reg, tty)
     else:
         assert False, "unknown command"
        

@@ -157,6 +157,14 @@ static void handle_message(const int sock, char *err, char cmd, char *buffer, in
 			to_write -= written;
 		}
 	}
+	else if(cmd == 6)
+	{
+        /* Load FPGA configuration */
+		uint8_t Reg = *(uint32_t *)buffer & 0x1;
+		ESP_LOGI(TAG, "Reg read %d = 0x%08X", *(uint32_t *)buffer, Data);
+		const char *file = (Reg==0) ? cfg_file : spipass_file;
+		load_fpga(file);
+	}
 	else
 	{
 		ESP_LOGI(TAG, "Unknown command");

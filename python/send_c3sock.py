@@ -177,6 +177,22 @@ def psram_read(psaddr, dlen, addr, port):
             
         s.close()
 
+# send a load command plus config ID
+def load_cfg(reg, addr, port):
+    magic = make_magic(6)
+    regsz = 4
+    size = regsz.to_bytes(4, byteorder = 'little')
+    payload = b"".join([magic, size, reg.to_bytes(4, byteorder = 'little')])
+    
+    # send to the socket server on the C3
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((addr, port))
+        s.sendall(payload)
+        reply = s.recv(1024)
+        if reply[0]!= 0 :
+            print("Error", reply[0])
+        s.close()
+
 # usage text for command line
 def usage():
     print(sys.argv[0], " [options] [<file>] | [DATA] | [LEN] communicate with ESP32C3 FPGA")
@@ -185,6 +201,7 @@ def usage():
     print("  -b, --battery           : report battery voltage (in millivolts)")
     print("  -f, --flash <file>      : write <file> to SPIFFS flash")
     print("  -i, --info              : get info (version, IP addr)")
+    print("  -l, --load=<cfg#>       : load config from SPIFFS (0=default, 1=spi_pass")
     print("  -p, --port=portnum      : port of FPGA load (default 3333)")
     print("  -r, --read=REG          : register to read")
     print("  -w, --write=REG DATA    : register to write and data to write")
@@ -196,9 +213,9 @@ def usage():
 if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(sys.argv[1:], \
-            "ha:bfip:r:w:", \
-            ["help", "address=", "battery", "flash", "info", "port=", \
-             "read=", "write=","ps_rd=", "ps_wr=", "ps_in="])
+            "ha:bfil:p:r:w:", \
+            ["help", "address=", "battery", "flash", "info", "load=", \
+             "port=", "read=", "write=","ps_rd=", "ps_wr=", "ps_in="])
     except getopt.GetoptError as err:
         # print help information and exit:
         print(err)  # will print something like "option -a not recognized"
@@ -224,6 +241,9 @@ if __name__ == "__main__":
             cmmd = 5
         elif o in ("-f", "--flash"):
             cmmd = 14
+        elif o in ("-l", "--load"):
+            reg = int(a) & 1
+            cmmd = 6
         elif o in ("-p", "--port"):
             port = int(a)
         elif o in ("-r", "--read"):
@@ -272,6 +292,8 @@ if __name__ == "__main__":
         read_vbat()
     elif cmmd == 5:
         read_info()
+    elif cmmd == 6:
+        load_cfg(reg, addr, port)
     else:
         assert False, "unhandled option"
 

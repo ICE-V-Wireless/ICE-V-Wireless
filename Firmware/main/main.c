@@ -18,7 +18,7 @@
 static const char* TAG = "main";
 
 /* build version in simple format */
-const char *fwVersionStr = "0.2";
+const char *fwVersionStr = "0.3";
 const char *cfg_file = "/spiffs/bitstream.bin";
 const char *spipass_file = "/spiffs/spi_pass.bin";
 const char *psram_file = "/spiffs/spipass.bin";

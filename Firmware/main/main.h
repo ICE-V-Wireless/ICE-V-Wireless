@@ -19,4 +19,6 @@ extern const char *cfg_file;
 extern const char *spipass_file;
 extern const char *psram_file;
 
+esp_err_t load_fpga(const char *filename);
+
 #endif

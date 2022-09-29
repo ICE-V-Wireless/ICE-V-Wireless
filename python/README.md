@@ -1,23 +1,26 @@
-# Python Scripts For Firmware V0.2
+# Python Scripts For Firmware V0.3
+
 This directory contains the host-side Python utility scripts which are used to
 communicate with the ICE-V Wireless board over USB and WiFi.
 
 ## Installation
+
 The scripts require Python 3 and use modules that should be available with most
 common installations so they should run "out of the box" with no special effort.
 
 ## Running under various OSes
+
 These utility scripts are built with Python for maximum cross-platform useability,
 however there are still some notable differences in how they can be used. Here
 are some usage notes for different operating systems.
 
 ### Linux
+
 Linux is the "native" system under which these scripts were developed and as a
-result this will be the smoothest use-case. No special effort should be required
-aside from properly determining which TTY device maps to the USB Serial port of
-ICE-V board
+result this will be the smoothest use-case. No special effort should be required since the Python serial library will should automatically find your ICE-V-Wireless module using its USB VID:PID values.
 
 ### Mac OS
+
 In general Mac OS behaves very similarly to Linux when running Python scripts. On
 older versions it may be necessary to install Python 3, but simple packages are
 available directly from Python.org
@@ -42,6 +45,7 @@ Then use that as an argument to the USB script. For example:
 `python3 ./send_c3usb.py -p /dev/tty.cxxx -i`
 
 ### Windows
+
 Windows is the most problematic OS for these scripts, but it can work with some
 care.
 
@@ -73,6 +77,7 @@ the port option of the USB Serial script:
 where `COMx` is the port name you discovered in the Device Manager.
 
 #### Note
+
 There is a quirk in the Windows Pyserial module that causes the ICE-V board to
 reset at the completion of every command received from the USB Serial script. It
 will be necessary to wait several seconds for the green activity LED to start
@@ -85,11 +90,13 @@ can determine the IPV4 address and then provide that to the WiFi script:
 `python3 send_c3sock.py -a <YOUR_IP_ADDR> -b`
 
 ## USB Serial
+
 The script `send_c3usb.py` communicates with the ICE-V-Wireless board via
 USB and requires only that you attach the board to a host computer and wait
 until the green `C3` LED is flashing. 
 
 ### USB Usage
+
 ```
 send_c3usb.py [options] [<file>] | [DATA]
   -h, --help              : this message
@@ -97,15 +104,18 @@ send_c3usb.py [options] [<file>] | [DATA]
   -b, --battery           : report battery voltage (in millivolts)
   -f, --flash=<file>      : write <file> to SPIFFS flash
   -i, --info              : get info (version, IP addr)
+  -l, --load=<cfg#>       : load config from SPIFFS (0=default, 1=spi_pass)
   -r, --read=REG          : register to read
   -w, --write=REG DATA    : register to write and data to write
       --ps_rd=ADDR LEN    : read PSRAM at ADDR for LEN to stdout
       --ps_wr=ADDR <file> : write PSRAM at ADDR with data in <file>
+      --ps_in=ADDR <file> : write PSRAM init at ADDR with data in <file>
   -s, --ssid <SSID>       : set WiFi SSID
   -o, --password <pwd>    : set WiFi Password
 ```
 
 ### Fast FPGA programming
+
 To quickly load a new configuration into the FPGA
 
 ```
@@ -113,13 +123,15 @@ send_c3usb.py <bitstream>
 ```
 
 ### Update default power-on configuration
-To load a new default configuration for loading at power-up
+
+To load a new default configuration into SPIFFS for loading at power-up
 
 ```
 send_c3usb.py --flash <bitstream>
 ```
 
 ### Read battery voltage
+
 To get the current LiPo batter voltage value in millivolts
 
 ```
@@ -127,6 +139,7 @@ send_c3usb.py --battery
 ```
 
 ### Read Info
+
 To get the firmware version and WiFi IP address
 
 ```
@@ -134,6 +147,7 @@ send_c3usb.py --info
 ```
 
 ### Read a SPI register
+
 If the current FPGA design supports SPI CSRs, read a register
 
 ```
@@ -141,40 +155,61 @@ send_c3usb.py --read=<REG>
 ```
 
 ### Write a SPI register
+
 If the current FPGA design supports SPI CSRs, write a register
 
 ```
 send_c3usb.py --write=<REG> <DATA>
 ```
 
+### Load a stored configuration
+
+This configures the FPGA with a configuration already stored in the onboard SPIFFS filesystem. Choose <cfg#> 0 for the default configuration and 1 for the "spi_pass" configuration which is needed prior to issuing the PSRAM commands below.
+
+```
+send_c3usb.py --load=<cfg#>
+```
+
 ### Read PSRAM
+
 Reads from the 8MB PSRAM on the board starting at address ADDR for LEN bytes.
 Output is sent to stdout so be sure to redirect to a file or pipe that can
 handle the raw binary data.
 
-Note that you must have an FPGA design that supports SPI pass-thru to the PSRAM.
-A simple example design is available in the Gateware/spi_pass directory.
+Note that you must have an FPGA design that supports SPI pass-thru to the PSRAM - the easiest way to do this is by issuing the `--load=1` prior.
 
 ```
 send_c3usb.py --ps_rd=ADDR LEN > <READ FILE>
 ```
 
 ### Write PSRAM
-Writes data from <file> to the 8MB PSRAM on the board starting at address ADDR.
-At this time file length is maximum 65536 bytes.
 
-Note that you must have an FPGA design that supports SPI pass-thru to the PSRAM.
-A simple example design is available in the Gateware/spi_pass directory.
+Writes data from <file> to the 8MB PSRAM on the board starting at address ADDR.
+At this time file length is limited to the free SRAM in the ESP32C3 which is about 200kB.
+
+Note that you must have loaded an FPGA design that supports SPI pass-thru to the PSRAM - the easiest way to do this is by issuing the `--load=1` command prior.
 
 ```
 send_c3usb.py --ps_wr=ADDR <file>
 ```
 
+### Write PSRAM Init
+
+Writes data from <file> to the SPIFFS filesystem for loading at powerup into the 8MB PSRAM on the board starting at address ADDR.
+At this time file length is limited to the free SRAM in the ESP32C3 which is about 200kB.
+
+```
+send_c3usb.py --ps_in=ADDR <file>
+```
+
 ### Set WiFi SSID
+
 Sets the WiFi SSID credential to use when first connecting at power-up.
+
 ```
 send_c3usb.py --ssid <YOUR SSID>
 ```
+
 Note that after setting the SSID and Password you will need to reset the
 ICE-V-Wireless board to allow it to connect with the new credentials. Once
 the board has successfully connected the green `C3` LED will flash at a
@@ -182,10 +217,13 @@ the board has successfully connected the green `C3` LED will flash at a
 USB Serial connections will be possible and the LED will blink at a 1Hz rate.
 
 ### Set WiFi Password
+
 Sets the WiFi Password credential to use when first connecting at power-up.
+
 ```
 send_c3usb.py --password <YOUR PASSWORD>
 ```
+
 Note that after setting the SSID and Password you will need to reset the
 ICE-V-Wireless board to allow it to connect with the new credentials. Once
 the board has successfully connected the green `C3` LED will flash at a
@@ -193,6 +231,7 @@ the board has successfully connected the green `C3` LED will flash at a
 USB Serial connections will be possible and the LED will blink at a 1Hz rate.
 
 ## WiFi
+
 The script `send_c3sock.py` communicates with the ICE-V-Wireless board via
 WiFi networking and requires that you have previously provided your WiFi network
 credentials before it can join your network. The ICE-V default firmware uses mDNS
@@ -209,6 +248,7 @@ proper address at every invocation of the script with the `--address=<IP>` optio
 or modify the script to use that address.
 
 ### WiFi Usage
+
 ```
 send_c3sock.py [options] [<file>] | [DATA]
   -h, --help              : this message
@@ -216,14 +256,17 @@ send_c3sock.py [options] [<file>] | [DATA]
   -b, --battery           : report battery voltage (in millivolts)
   -f, --flash <file>      : write <file> to SPIFFS flash
   -i, --info              : get info (version, IP addr)
+  -l, --load=<cfg#>       : load config from SPIFFS (0=default, 1=spi_pass)
   -p, --port=portnum      : port of FPGA load (default 3333)
   -r, --read=REG          : register to read
   -w, --write=REG DATA    : register to write and data to write
       --ps_rd=ADDR LEN    : read PSRAM at ADDR for LEN to stdout
       --ps_wr=ADDR <file> : write PSRAM at ADDR with data in <file>
+      --ps_in=ADDR <file> : write PSRAM init at ADDR with data in <file>
 ```
 
 ### Fast FPGA programming
+
 To quickly load a new configuration into the FPGA
 
 ```
@@ -231,6 +274,7 @@ send_c3sock.py <bitstream>
 ```
 
 ### Update default power-on configuration
+
 To load a new default configuration for loading at power-up
 
 ```
@@ -238,6 +282,7 @@ send_c3sock.py --flash <bitstream>
 ```
 
 ### Read battery voltage
+
 To get the current LiPo batter voltage value in millivolts
 
 ```
@@ -245,6 +290,7 @@ send_c3sock.py --battery
 ```
 
 ### Read Info
+
 To get the firmware version and WiFi IP address
 
 ```
@@ -252,6 +298,7 @@ send_c3sock.py --info
 ```
 
 ### Read a SPI register
+
 If the current FPGA design supports SPI CSRs, read a register
 
 ```
@@ -259,31 +306,49 @@ send_c3sock.py --read=<REG>
 ```
 
 ### Write a SPI register
+
 If the current FPGA design supports SPI CSRs, write a register
 
 ```
 send_c3sock.py --write=<REG> <DATA>
 ```
 
+### Load a stored configuration
+
+This configures the FPGA with a configuration already stored in the onboard SPIFFS filesystem. Choose <cfg#> 0 for the default configuration and 1 for the "spi_pass" configuration which is needed prior to issuing the PSRAM commands below.
+
+```
+send_c3sock.py --load=<cfg#>
+```
+
 ### Read PSRAM
+
 Reads from the 8MB PSRAM on the board starting at address ADDR for LEN bytes.
 Output is sent to stdout so be sure to redirect to a file or pipe that can
 handle the raw binary data. At this time LEN is maximum 65536 bytes.
 
-Note that you must have an FPGA design that supports SPI pass-thru to the PSRAM.
-A simple example design is available in the Gateware/spi_pass directory.
+Note that you must have loaded an FPGA design that supports SPI pass-thru to the PSRAM - the easiest way to do this is by issuing the `--load=1` command prior.
 
 ```
 send_c3sock.py --ps_rd=ADDR LEN > <READ FILE>
 ```
 
 ### Write PSRAM
+
 Writes data from <file> to the 8MB PSRAM on the board starting at address ADDR.
 At this time file length is maximum 65536 bytes.
 
-Note that you must have an FPGA design that supports SPI pass-thru to the PSRAM.
-A simple example design is available in the Gateware/spi_pass directory.
+Note that you must have loaded an FPGA design that supports SPI pass-thru to the PSRAM - the easiest way to do this is by issuing the `--load=1` command prior.
 
 ```
 send_c3sock.py --ps_wr=ADDR <file>
+```
+
+### Write PSRAM Init
+
+Writes data from to the SPIFFS filesystem for loading at powerup into the 8MB PSRAM on the board starting at address ADDR.
+At this time file length is limited to the free SRAM in the ESP32C3 which is about 200kB.
+
+```
+send_c3sock.py --ps_in=ADDR <file>
 ```

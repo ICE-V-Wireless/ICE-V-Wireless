@@ -17,11 +17,11 @@ set_io SPI_MOSI 17
 set_io clk_12MHz 35
 
 # Diagnostics for default design
-set_io clk24 13
-set_io reset24 20
-set_io diag 32
-set_io mbx_rinc 31
-set_io mbx_winc 43
+#set_io clk24 13
+#set_io reset24 20
+#set_io diag 32
+#set_io mbx_rinc 31
+#set_io mbx_winc 43
 
 # Serial I/O for RISC-V soft core in default design
 set_io rx 46

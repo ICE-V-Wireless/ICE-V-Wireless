@@ -5,17 +5,22 @@
 
 `define DIV 14'd9999
 
+// uncomment this to enable diagnostics
+//`define ENABLE_DIAG
+
 module bitstream(
 	// 12MHz external osc
 	input clk_12MHz,
 	
+`ifdef ENABLE_DIAG
 	// riscv diags
 	output clk24,
 	output reset24,
 	output diag,
 	output mbx_rinc,
 	output mbx_winc,
-	
+`endif
+
 	// RISCV serial
 	input rx,
 	output tx,
@@ -177,11 +182,15 @@ module bitstream(
 			mbx_ord <= {mbx_ord[0], (re & (addr == 7'h04))};
 		end
 	end
+	
+`ifdef ENABLE_DIAG
 	assign mbx_rinc = mbx_diag[0];
 	assign mbx_winc = mbx_diag[1];
+`endif
 	
 	// RISC-V CPU based serial I/O
 	wire [7:0] red, grn, blu;
+	wire diag;
 	system u_riscv(
 		.clk24(clk24),
 		.reset(reset24),

@@ -320,6 +320,7 @@ if __name__ == "__main__":
             psaddr = int(a)
         elif o in ("--ps_wr"):
             cmmd = 12
+            psaddr = int(a)
         elif o in ("--ps_in"):
             cmmd = 10
             psaddr = int(a)

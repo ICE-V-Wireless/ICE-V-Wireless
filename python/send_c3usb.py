@@ -47,7 +47,7 @@ def recv_err_tokens(tty):
         # convert binary to ascii string and tokenize
         rplystr = reply.decode('utf-8')
         rplytok = rplystr.split()
-
+        
         # search tokens for reply header
         for tokidx in range(len(rplytok)):
             if rplytok[tokidx] == 'RX':
@@ -155,7 +155,7 @@ def read_info(tty):
             print("Error")
     
 # write file to psram
-def psram_write(cmd, psaddr, name, tty):
+def psram_write(psaddr, name, tty):
     # open file as binary
     with open(name, "rb") as file:
         # get length by seeking around
@@ -165,7 +165,7 @@ def psram_write(cmd, psaddr, name, tty):
         print("Size of", name, "is", file_len, "bytes")
 
         # iterate over max 64kB chunks
-        magic = make_magic(cmd)
+        magic = make_magic(12)
         remain_len = file_len
         while remain_len:
             send_len = min(remain_len, 65536)
@@ -224,6 +224,32 @@ def psram_read(psaddr, numbytes, tty):
             print("No header")
             go = 0
     return
+
+# write file to psram init file
+def psram_init(psaddr, name, tty):
+    # open file as binary
+    with open(name, "rb") as file:
+        # get length by seeking around
+        file.seek(0, os.SEEK_END)
+        file_len = file.tell()
+        file.seek(0, os.SEEK_SET)
+        print("Size of", name, "is", file_len, "bytes")
+
+        # psram init command
+        magic = make_magic(10)
+        
+        # add the header with command
+        size = file_len + 4
+        size_bytes = size.to_bytes(4, byteorder = 'little')
+        psaddr_bytes = psaddr.to_bytes(4, byteorder = 'little')
+        payload = b"".join([magic, size_bytes, psaddr_bytes, file.read(file_len)])
+
+        # send to the C3 over usb
+        print("PS_WR: sending packet @", psaddr, " len", file_len)
+        sendall(tty, payload)
+        err, data = recv_err_data(tty)
+        if err:
+            print("Error", err)
 
 # send credentials (ssid or password)
 def send_cred(cred_type, cred_value, tty):
@@ -345,9 +371,9 @@ if __name__ == "__main__":
             send_file(args[0], cmmd, tty)
         else:
             print("missing filename")
-    elif (cmmd == 12) or (cmmd == 10):
+    elif cmmd == 12:
         if len(args) > 0:
-            psram_write(cmmd, psaddr, args[0], tty)
+            psram_write(psaddr, args[0], tty)
         else:
              print("missing filename")
     elif cmmd == 11:
@@ -358,6 +384,11 @@ if __name__ == "__main__":
                  print("missing length")
         else:
             print("Not yet supported")
+    elif cmmd == 10:
+        if len(args) > 0:
+            psram_init(psaddr, args[0], tty)
+        else:
+             print("missing filename")
     elif cmmd == 0:
         read_reg(reg, tty)
     elif cmmd == 1:

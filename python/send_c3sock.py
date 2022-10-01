@@ -110,7 +110,7 @@ def read_info():
         s.close()
 
 # write file to psram
-def psram_write(cmd, psaddr, name, addr, port):
+def psram_write(psaddr, name, addr, port):
     # open file as binary
     with open(name, "rb") as file:
         # get length by seeking around
@@ -120,7 +120,7 @@ def psram_write(cmd, psaddr, name, addr, port):
         print("Size of", name, "is", file_len, "bytes")
 
         # iterate over max 64kB chunks
-        magic = make_magic(cmd)
+        magic = make_magic(12)
         remain_len = file_len
         while remain_len:
             send_len = min(remain_len, 65536)
@@ -176,6 +176,35 @@ def psram_read(psaddr, dlen, addr, port):
             rxlen = rxlen + len(reply)
             
         s.close()
+
+# write file to psram
+def psram_init(psaddr, name, addr, port):
+    # open file as binary
+    with open(name, "rb") as file:
+        # get length by seeking around
+        file.seek(0, os.SEEK_END)
+        file_len = file.tell()
+        file.seek(0, os.SEEK_SET)
+        print("Size of", name, "is", file_len, "bytes")
+
+        # init cmd
+        magic = make_magic(10)
+        
+        # add the header with command
+        size = file_len + 4
+        size_bytes = size.to_bytes(4, byteorder = 'little')
+        psaddr_bytes = psaddr.to_bytes(4, byteorder = 'little')
+        payload = b"".join([magic, size_bytes, psaddr_bytes, file.read(file_len)])
+
+        # send to the socket server on the C3
+        print("psram_write: sending packet @", psaddr, " len", file_len)
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((addr, port))
+            s.sendall(payload)
+            reply = s.recv(1024)
+            if reply[0] :
+                print("Error", reply[0])
+            s.close()
 
 # send a load command plus config ID
 def load_cfg(reg, addr, port):
@@ -271,9 +300,9 @@ if __name__ == "__main__":
             send_file(args[0], cmmd, addr, port)
         else:
             print("missing filename")
-    elif (cmmd == 12) or (cmmd == 10):
+    elif cmmd == 12:
         if len(args) > 0:
-            psram_write(cmmd, psaddr, args[0], addr, port)
+            psram_write(psaddr, args[0], addr, port)
         else:
              print("missing filename")
     elif cmmd == 11:
@@ -281,6 +310,11 @@ if __name__ == "__main__":
             psram_read(psaddr, int(args[0]), addr, port)
         else:
              print("missing length")
+    elif cmmd == 10:
+        if len(args) > 0:
+            psram_init(psaddr, args[0], addr, port)
+        else:
+             print("missing filename")
     elif cmmd == 0:
         read_reg(reg, addr, port)
     elif cmmd == 1:

@@ -38,7 +38,7 @@ esp_err_t spiffs_init(void)
     }
 
     size_t total = 0, used = 0;
-    ret = esp_spiffs_info(conf.partition_label, &total, &used);
+    ret = spiffs_info(&total, &used);
     if (ret != ESP_OK)
 	{
         ESP_LOGE(TAG, "Failed to get SPIFFS partition information (%s)", esp_err_to_name(ret));
@@ -47,6 +47,14 @@ esp_err_t spiffs_init(void)
 	
 	ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
 	return ESP_OK;
+}
+
+/*
+ * get spiffs info
+ */
+esp_err_t spiffs_info(size_t *total, size_t *used)
+{
+    return esp_spiffs_info(conf.partition_label, total, used);
 }
 
 /*

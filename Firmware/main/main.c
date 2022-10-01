@@ -21,7 +21,7 @@ static const char* TAG = "main";
 const char *fwVersionStr = "0.3";
 const char *cfg_file = "/spiffs/bitstream.bin";
 const char *spipass_file = "/spiffs/spi_pass.bin";
-const char *psram_file = "/spiffs/spipass.bin";
+const char *psram_file = "/spiffs/psram.bin";
 
 /* build time */
 const char *bdate = __DATE__;
@@ -64,7 +64,6 @@ esp_err_t load_fpga(const char *filename)
 void app_main(void)
 {
 	uint32_t blink_period = 500;
-	uint8_t *bin = NULL;
 	uint32_t sz;
 	
 	/* Startup */
@@ -91,19 +90,78 @@ void app_main(void)
 			load_fpga(spipass_file);
 			
 			/* Get data from file and send */
-			if(!spiffs_read((char *)psram_file, &bin, &sz))
+#if 0
 			{
-				/* write block of data to PSRAM via SPI pass-thru */
-				uint32_t Addr = *((uint32_t *)bin);
-				ESP_LOGI(TAG, "PSRAM write: Addr 0x%08X, Len 0x%08X", Addr, sz-4);
-				ICE_PSRAM_Write(Addr, (uint8_t *)bin+4, sz-4);
-				
-				/* done */
-				free(bin);
-				ESP_LOGI(TAG, "PSRAM file read OK");
+				uint8_t *bin = NULL;
+				if(!spiffs_read((char *)psram_file, &bin, &sz))
+				{
+					/* write block of data to PSRAM via SPI pass-thru */
+					uint32_t Addr = *((uint32_t *)bin);
+					ESP_LOGI(TAG, "PSRAM write: Addr 0x%08X, Len 0x%08X", Addr, sz-4);
+					ICE_PSRAM_Write(Addr, (uint8_t *)bin+4, sz-4);
+					
+					/* done */
+					free(bin);
+					ESP_LOGI(TAG, "PSRAM file read OK");
+				}
+				else
+					ESP_LOGI(TAG, "PSRAM file read error");
 			}
-			else
-				ESP_LOGI(TAG, "PSRAM file read error");
+#else
+			{
+				size_t act;
+				FILE* f = fopen(psram_file, "rb");
+				if (f != NULL)
+				{
+					/* get size */
+					fseek(f, 0L, SEEK_END);
+					sz = ftell(f);
+					fseek(f, 0L, SEEK_SET);
+					
+					/* set up a big read buffer */
+					uint8_t *buffer;
+					size_t bufsz = sz < 65536 ? sz : 65536;
+					buffer = malloc(bufsz);
+					
+					/* get starting offset */
+					uint32_t Addr;
+					act = fread(&Addr, 1, sizeof(uint32_t), f);
+					sz -= 4;
+					ESP_LOGI(TAG, "PSRAM write: Addr 0x%08X, Len 0x%08X", Addr, sz);
+
+					/* read from file and send to PSRAM */
+					esp_err_t err = ESP_OK;
+					while(sz)
+					{
+						size_t rsz = sz < bufsz ? sz : bufsz;
+						act = fread(buffer, 1, rsz, f);
+						if(act != rsz)
+						{
+							ESP_LOGE(TAG, "Failed reading %d, actual = %d", rsz, act);
+							err = ESP_FAIL;
+							break;
+						}
+						else
+						{
+							ICE_PSRAM_Write(Addr, buffer, rsz);
+							ESP_LOGI(TAG, "  chunk @ Addr 0x%08X, Len 0x%08X", Addr, rsz);
+						}
+						sz -= rsz;
+						Addr += rsz;
+					}
+					
+					/* done */
+					free(buffer);
+					fclose(f);
+					if(err == ESP_OK)
+						ESP_LOGI(TAG, "PSRAM file read OK");
+					else
+						ESP_LOGE(TAG, "PSRAM file failed");
+				}
+				else
+					ESP_LOGI(TAG, "PSRAM file open error");
+			}
+#endif
 		}
 		else
 			ESP_LOGI(TAG, "PSRAM file is empty");
@@ -133,7 +191,7 @@ void app_main(void)
 	
 	ESP_LOGI(TAG, "free heap: %d",esp_get_free_heap_size());
 	
-#if 1
+#if 0
 	/* start up USB/serial command handler */
 	if(!sercmd_init())
 		ESP_LOGI(TAG, "Serial Command Running");

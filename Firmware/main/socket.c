@@ -111,7 +111,14 @@ static void handle_message(const int sock, char *err, char cmd, char *buffer, in
 	else if(cmd == 0xa)
 	{
 		/* save PSRAM data to the SPIFFS filesystem */
-		uint8_t cfg_stat;	
+		uint8_t cfg_stat;
+		size_t total = 0, used = 0;
+		
+		/* note SPIFFS avail */
+		spiffs_info(&total, &used);
+		ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
+		
+		/* write buffer to file */
 		if((cfg_stat = spiffs_write((char *)psram_file, (uint8_t *)buffer, txsz)))
 		{
 			ESP_LOGW(TAG, "PSRAM write SPIFFS Error - status = %d", cfg_stat);
@@ -198,6 +205,100 @@ static void handle_message(const int sock, char *err, char cmd, char *buffer, in
 }
 
 /*
+ * special case for handling PSRAM Init message
+ */
+static void handle_ps_in(const int sock, char *err, char *left, int leftsz, int txsz)
+{
+	char buffer[64];
+	size_t act, rsz, tot, use;
+	FILE* f = NULL;
+	
+	/* note SPIFFS avail */
+	spiffs_info(&tot, &use);
+	tot = tot - use;
+	ESP_LOGI(TAG, "PS_IN: SPIFFS available: %d", tot);
+	
+	/* open file if enough space in SPIFFS */
+	if(tot > txsz)
+	{
+		f = fopen(psram_file, "wb");
+		if (f != NULL)
+		{
+			ESP_LOGI(TAG, "PS_IN: Writing %d to file %s ", txsz, psram_file);
+		}
+		else
+		{
+			ESP_LOGE(TAG, "Failed to open file for writing");
+			*err = 1;
+		}
+	}
+	else
+	{
+		ESP_LOGE(TAG, "Not enough space in SPIFFS - skipping.");
+		*err = 1;
+	}
+	
+	/* write initial remaining data */
+	if(f)
+	{
+		if((act = fwrite(left, 1, leftsz, f)) != leftsz)
+		{
+			ESP_LOGE(TAG, "Failed writing remaining %d - actual = %d", leftsz, act);
+			*err |= 2;
+		}
+	}
+	txsz -= leftsz;
+	tot = leftsz;
+	
+	/* loop over rest of data */
+	while(txsz)
+	{
+		/* get from socket */
+        rsz = recv(sock, buffer, sizeof(buffer), 0);
+		
+		/* write to file (if open) */
+		if(f)
+		{
+			act = fwrite(buffer, 1, rsz, f);
+			if(act != rsz)
+			{
+				ESP_LOGE(TAG, "Failed writing %d - actual = %d", rsz, act);
+				*err |= 4;
+			}
+		}
+		
+		txsz -= rsz;
+		tot += rsz;
+	}
+
+	/* close file */
+	if(f)
+	{
+		fclose(f);
+		ESP_LOGI(TAG, "Wrote %d to file %s", tot, psram_file);
+	}
+	else
+		ESP_LOGI(TAG, "flushed %d", tot);
+
+	/* tried flushing socket here but it hung. Doesn't seem to be needed */
+	
+	/* return status */
+	ESP_LOGI(TAG, "PS_IN replying status");
+	int to_write = 1;
+	while(to_write > 0)
+	{
+		int written = send(sock, err, to_write, 0);
+		if (written < 0)
+		{
+			ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+		}
+		to_write -= written;
+	}
+	
+	ESP_LOGI(TAG, "PS_IN done");
+}
+
+/*
  * receive a message
  */
 static void do_getmsg(const int sock)
@@ -210,21 +311,27 @@ static void do_getmsg(const int sock)
 		unsigned int words[2];
 	} header;
 
-    do {
+    do
+	{
 		/* get latest buffer */
         len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
 		rxidx = 0;
 		
-        if (len < 0) {
+        if(len < 0)
+		{
             ESP_LOGE(TAG, "Error occurred during receiving: errno %d", errno);
-        } else if (len == 0) {
+        }
+		else if(len == 0)
+		{
 			if(filebuffer)
 			{
 				free(filebuffer);
 				ESP_LOGW(TAG, "file buffer not properly freed");
 			}
             ESP_LOGI(TAG, "Connection closed, tot = %d, state = %d", tot, state);
-        } else {
+        }
+		else
+		{
 			/* valid data - parse w/ state machine */
 			int rxleft = len;
 			switch(state)
@@ -252,64 +359,91 @@ static void do_getmsg(const int sock)
 							txsz = header.words[1];
 							ESP_LOGI(TAG, "State 0: Found header: cmd %1X, txsz = %d", cmd, txsz);
 							
-							/* lock resources */
-							if(xSemaphoreTake(ice_mutex, (TickType_t)100)==pdTRUE)
-							{							
-								/* allocate a buffer for the data */
-								filebuffer = malloc(txsz);
-								if(filebuffer)
+							if(cmd==0xA)
+							{
+								/* special case for command 0xA - PSRAM_INIT */
+								if(xSemaphoreTake(ice_mutex, (TickType_t)100)==pdTRUE)
 								{
-									/* save any remaining data in buffer */
-									fptr = filebuffer;
+									/* gather remaining */
 									sz = rxleft;
 									sz = sz <= txsz ? sz : txsz;
-									memcpy(fptr, rx_buffer+rxidx, sz);
-									//ESP_LOGI(TAG, "State 0: got %d, used %d", rxleft, sz);
-									fptr += sz;
-									tot += sz;
-									rxleft -= sz;
+									
+									/* handle the rest */
+									handle_ps_in(sock, &err, rx_buffer+rxidx, sz, txsz);
+								
+									/* unlock resources */
+									xSemaphoreGive(ice_mutex);
+									
+									/* advance state */
+									state = 2;
 								}
 								else
 								{
-									ESP_LOGW(TAG, "Couldn't alloc buffer");
+									ESP_LOGW(TAG, "Couldn't get FPGA access");
 									err |= 1;
 								}
 							}
 							else
 							{
-								ESP_LOGW(TAG, "Couldn't get FPGA access");
-								err |= 1;
-							}
-							
-							/* done? */
-							if((tot-8)==txsz)
-							{
-                                /* compute CRC32 to match linux crc32 cmd */
-                                uint32_t crc = crc32_le(0, (uint8_t *)filebuffer, txsz);
-								ESP_LOGI(TAG, "State 0: Done - Received %d, CRC32 = 0x%08X", txsz, crc);
-								handle_message(sock, &err, cmd, filebuffer, txsz);
+								/* all others - lock resources */
+								if(xSemaphoreTake(ice_mutex, (TickType_t)100)==pdTRUE)
+								{							
+									/* allocate a buffer for the data */
+									filebuffer = malloc(txsz);
+									if(filebuffer)
+									{
+										/* save any remaining data in buffer */
+										fptr = filebuffer;
+										sz = rxleft;
+										sz = sz <= txsz ? sz : txsz;
+										memcpy(fptr, rx_buffer+rxidx, sz);
+										//ESP_LOGI(TAG, "State 0: got %d, used %d", rxleft, sz);
+										fptr += sz;
+										tot += sz;
+										rxleft -= sz;
+									}
+									else
+									{
+										ESP_LOGW(TAG, "Couldn't alloc buffer");
+										err |= 1;
+									}
+								}
+								else
+								{
+									ESP_LOGW(TAG, "Couldn't get FPGA access");
+									err |= 1;
+								}
 								
-								/* free the buffer */
-								free(filebuffer);
-								filebuffer = NULL;
+								/* done? */
+								if((tot-8)==txsz)
+								{
+									/* compute CRC32 to match linux crc32 cmd */
+									uint32_t crc = crc32_le(0, (uint8_t *)filebuffer, txsz);
+									ESP_LOGI(TAG, "State 0: Done - Received %d, CRC32 = 0x%08X", txsz, crc);
+									handle_message(sock, &err, cmd, filebuffer, txsz);
+									
+									/* free the buffer */
+									free(filebuffer);
+									filebuffer = NULL;
+									
+									/* unlock resources */
+									xSemaphoreGive(ice_mutex);
+									
+									/* advance to complete state */
+									state = 2;
+								}
+								else
+								{
+									/* advance to next state */
+									state = 1;
+								}
 								
-								/* unlock resources */
-								xSemaphoreGive(ice_mutex);
-								
-								/* advance to complete state */
-								state = 2;
-							}
-							else
-							{
-								/* advance to next state */
-								state = 1;
-							}
-							
-							/* check for errors */
-							if(rxleft)
-							{
-								ESP_LOGW(TAG, "Received data > txsz %d", rxleft);
-								err |= 2;
+								/* check for errors */
+								if(rxleft)
+								{
+									ESP_LOGW(TAG, "Received data > txsz %d", rxleft);
+									err |= 2;
+								}
 							}
 						}
 						else
@@ -376,7 +510,8 @@ static void do_getmsg(const int sock)
 					break;
 			}
         }
-    } while (len > 0);
+    }
+	while(len > 0);
 }
 
 /*

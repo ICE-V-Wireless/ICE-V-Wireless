@@ -90,24 +90,6 @@ void app_main(void)
 			load_fpga(spipass_file);
 			
 			/* Get data from file and send */
-#if 0
-			{
-				uint8_t *bin = NULL;
-				if(!spiffs_read((char *)psram_file, &bin, &sz))
-				{
-					/* write block of data to PSRAM via SPI pass-thru */
-					uint32_t Addr = *((uint32_t *)bin);
-					ESP_LOGI(TAG, "PSRAM write: Addr 0x%08X, Len 0x%08X", Addr, sz-4);
-					ICE_PSRAM_Write(Addr, (uint8_t *)bin+4, sz-4);
-					
-					/* done */
-					free(bin);
-					ESP_LOGI(TAG, "PSRAM file read OK");
-				}
-				else
-					ESP_LOGI(TAG, "PSRAM file read error");
-			}
-#else
 			{
 				size_t act;
 				FILE* f = fopen(psram_file, "rb");
@@ -161,7 +143,6 @@ void app_main(void)
 				else
 					ESP_LOGI(TAG, "PSRAM file open error");
 			}
-#endif
 		}
 		else
 			ESP_LOGI(TAG, "PSRAM file is empty");
@@ -191,7 +172,7 @@ void app_main(void)
 	
 	ESP_LOGI(TAG, "free heap: %d",esp_get_free_heap_size());
 	
-#if 0
+#if 1
 	/* start up USB/serial command handler */
 	if(!sercmd_init())
 		ESP_LOGI(TAG, "Serial Command Running");

@@ -15,8 +15,11 @@
 #include "wifi.h"
 #include "mbedtls/base64.h"
 
+/* USB Serial doesn't give more than this per call */
+#define MAX_RDSZ 64
+
 /* uncomment to turn on UART2 debugging */
-//#define SERCMD_DBG
+#define SERCMD_DBG
 
 static const char* TAG = "sercmd";
 
@@ -57,7 +60,6 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 	{
 		/* read block of data from PSRAM via SPI pass-thru */
 		uint32_t Addr = *((uint32_t *)buffer);
-#define MAX_RDSZ 64
 		uint8_t psram_rdbuf[MAX_RDSZ];
 		uint32_t psram_rdsz = *((uint32_t *)(buffer+4));
 		unsigned char output[2*MAX_RDSZ];
@@ -80,9 +82,14 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 	}
 	else if(cmd == 0xa)
 	{
+#if 0
 		/* save PSRAM data to the SPIFFS filesystem */
 		if((cfg_stat = spiffs_write((char *)psram_file, (uint8_t *)buffer, txsz)))
 			err |= 8;
+#else
+		uart2_printf("Old PSRAM Init handler - shouldn't get here\r\n");
+		err |= 15;
+#endif		
 	}
 	else if(cmd == 0)
 	{
@@ -142,6 +149,92 @@ void sercmd_handle(uint8_t cmd, uint8_t *buffer, uint32_t txsz)
 		uart2_printf("short reply: RX %02X %08X\r\n", err, Data);
 		fprintf(stdout, "  RX %02X %08X\n", err, Data);
 	}
+}
+
+/*
+ * special case for handling PSRAM Init message
+ */
+static void sercmd_ps_in(int txsz)
+{
+	char buffer[MAX_RDSZ];
+	size_t bufsz, act, tot, use;
+	int rsz;
+	FILE* f = NULL;
+	uint8_t err = 0;	
+	
+	/* note SPIFFS avail */
+	spiffs_info(&tot, &use);
+	tot = tot - use;
+	uart2_printf("PS_IN: SPIFFS available: %d\r\n", tot);
+	
+	/* open file if enough space in SPIFFS */
+	if(tot > txsz)
+	{
+		f = fopen(psram_file, "wb");
+		if (f != NULL)
+		{
+			uart2_printf("PS_IN: Writing %d to file %s\r\n", txsz, psram_file);
+		}
+		else
+		{
+			uart2_printf("Failed to open file for writing\r\n");
+			err = 1;
+		}
+	}
+	else
+	{
+		uart2_printf("Not enough space in SPIFFS - skipping\r\n");
+		err = 1;
+	}
+		
+	/* loop over receive data */
+	tot = 0;
+	bufsz = txsz < MAX_RDSZ ? txsz : MAX_RDSZ;
+	while(txsz)
+	{
+		/* get from socket */
+		size_t bsz = txsz <  bufsz ? txsz : bufsz;
+		rsz = read(STDIN_FILENO, buffer, bsz);
+		//uart2_printf("txsz %d, read %d\r\n", txsz, rsz);
+		
+		if(rsz>0)
+		{
+			/* write to file (if open) */
+			if(f)
+			{
+				act = fwrite(buffer, 1, rsz, f);
+				if(act != rsz)
+				{
+					uart2_printf("Failed write %d, actual %d\r\n", rsz, act);
+					err |= 4;
+				}
+			}
+		
+			txsz -= rsz;
+			tot += rsz;
+		}
+		else
+		{
+			//uart2_printf("Failed read %d, actual %d\r\n", bsz, rsz);
+		}
+	}
+	
+	/* close file */
+	if(f)
+	{
+		fclose(f);
+		uart2_printf("Wrote %d to file %s\r\n", tot, psram_file);
+	}
+	else
+		uart2_printf("flushed %d\r\n", tot);
+
+	/* tried flushing socket here but it hung. Doesn't seem to be needed */
+	
+	/* return status */
+	uart2_printf("PS_IN replying status %d\r\n", err);
+	fprintf(stdout, "  RX %02X %08X\n", err, 0);
+
+	uart2_printf("PS_IN done\r\n");
 }
 
 /*
@@ -240,77 +333,85 @@ void sercmd_task(void *pvParameters)
 						/* lock resources */
 						if(xSemaphoreTake(ice_mutex, (TickType_t)100)==pdTRUE)
 						{							
-							/* alloc buffer for payload */
-							buffer = malloc(buffsz);
-							
-							if(buffer)
+							if(cmdval == 0xa)
 							{
-								/* if malloc succeeded then fill the buffer */
-								bufptr = buffer;
-								
-								/* buffer at a time - USB does 64 bytes max */
-								int bytes, timeout = 0;
-								while(cmdsz)
-								{
-									bytes = read(STDIN_FILENO, bufptr, cmdsz);
-									if(bytes>0)
-									{
-										bufptr += bytes;
-										cmdsz -= bytes;
-										timeout = 0;	// reset timeout
-									}
-									
-									/* don't hang if data ceases unexpectedly */
-									if(timeout++ > 1000)
-									{
-										uart2_printf("timeout waiting for payload\r\n");
-										cmdval = 16;	// force illegal command
-										break;
-									}
-									
-									/*
-									 * was thinking of putting a vTaskDelay() here
-									 * but it would likely slow things down too
-									 * much.
-									 */
-								}
-								
-								//dump_buffer(buffer, buffsz);
-								
-								/* handle command */
-								sercmd_handle(cmdval, buffer, buffsz);
-								
-								/* clean up */
-								free(buffer);
-								buffsz = 0;
-								cmdstate = 0;
+								/* Command 0xA - PSRAM Init is special */
+								sercmd_ps_in(buffsz);
 							}
 							else
 							{
-								/* malloc failed - flush stdin */
-								uart2_printf("malloc failed - flushing\r\n");
-								int bytes, timeout = 0;
-								uint8_t dummy_buf[64];
-								while(cmdsz)
+								/* all other commands - alloc buffer for payload */
+								buffer = malloc(buffsz);
+								
+								if(buffer)
 								{
-									int fsz = cmdsz > 64 ? 64 : cmdsz;
-									bytes = read(STDIN_FILENO, dummy_buf, fsz);
-									if(bytes>0)
+									/* if malloc succeeded then fill the buffer */
+									bufptr = buffer;
+									
+									/* buffer at a time - USB does 64 bytes max */
+									int bytes, timeout = 0;
+									while(cmdsz)
 									{
-										cmdsz -= bytes;
-										timeout = 0;	// reset timeout
+										bytes = read(STDIN_FILENO, bufptr, cmdsz);
+										if(bytes>0)
+										{
+											bufptr += bytes;
+											cmdsz -= bytes;
+											timeout = 0;	// reset timeout
+										}
+										
+										/* don't hang if data ceases unexpectedly */
+										if(timeout++ > 1000)
+										{
+											uart2_printf("timeout waiting for payload\r\n");
+											cmdval = 16;	// force illegal command
+											break;
+										}
+										
+										/*
+										 * was thinking of putting a vTaskDelay() here
+										 * but it would likely slow things down too
+										 * much.
+										 */
 									}
 									
-									/* don't hang if data ceases unexpectedly */
-									if(timeout++ > 1000)
-									{
-										uart2_printf("timeout waiting for payload\r\n");
-										break;
-									}
+									//dump_buffer(buffer, buffsz);
+									
+									/* handle command */
+									sercmd_handle(cmdval, buffer, buffsz);
+									
+									/* clean up */
+									free(buffer);
+									buffsz = 0;
+									cmdstate = 0;
 								}
-								
-								/* send error reply */
-								fprintf(stdout, "  RX %02X %08X\n", 7, 0);
+								else
+								{
+									/* malloc failed - flush stdin */
+									uart2_printf("malloc failed - flushing\r\n");
+									int bytes, timeout = 0;
+									uint8_t dummy_buf[64];
+									while(cmdsz)
+									{
+										int fsz = cmdsz > 64 ? 64 : cmdsz;
+										bytes = read(STDIN_FILENO, dummy_buf, fsz);
+										if(bytes>0)
+										{
+											cmdsz -= bytes;
+											timeout = 0;	// reset timeout
+										}
+										
+										/* don't hang if data ceases unexpectedly */
+										if(timeout++ > 1000)
+										{
+											uart2_printf("timeout waiting for payload\r\n");
+											break;
+										}
+									}
+									
+									/* send error reply */
+									fprintf(stdout, "  RX %02X %08X\n", 7, 0);
+								}
 							}
 							
 							/* unlock resources */

@@ -110,22 +110,8 @@ static void handle_message(const int sock, char *err, char cmd, char *buffer, in
 	}
 	else if(cmd == 0xa)
 	{
-		/* save PSRAM data to the SPIFFS filesystem */
-		uint8_t cfg_stat;
-		size_t total = 0, used = 0;
-		
-		/* note SPIFFS avail */
-		spiffs_info(&total, &used);
-		ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
-		
-		/* write buffer to file */
-		if((cfg_stat = spiffs_write((char *)psram_file, (uint8_t *)buffer, txsz)))
-		{
-			ESP_LOGW(TAG, "PSRAM write SPIFFS Error - status = %d", cfg_stat);
-			*err |= 8;
-		}
-		else
-			ESP_LOGI(TAG, "PSRAM write SPIFFS wrote OK - status = %d", cfg_stat);
+		ESP_LOGW(TAG, "PSRAM Init handler in handle_message() - shouldn't get here");
+		*err |= 15;
 	}
 	else if(cmd == 0)
 	{
@@ -209,8 +195,8 @@ static void handle_message(const int sock, char *err, char cmd, char *buffer, in
  */
 static void handle_ps_in(const int sock, char *err, char *left, int leftsz, int txsz)
 {
-	char buffer[64];
-	size_t act, rsz, tot, use;
+	char *buffer;
+	size_t act, rsz, tot, use, bufsz;
 	FILE* f = NULL;
 	
 	/* note SPIFFS avail */
@@ -250,27 +236,41 @@ static void handle_ps_in(const int sock, char *err, char *left, int leftsz, int 
 	txsz -= leftsz;
 	tot = leftsz;
 	
-	/* loop over rest of data */
-	while(txsz)
+	/* loop over rest of data. Wifi maxes out at ~4kB per */
+	bufsz = txsz < 4096 ? txsz : 4096;
+	buffer = malloc(bufsz);
+	if(buffer)
 	{
-		/* get from socket */
-        rsz = recv(sock, buffer, sizeof(buffer), 0);
-		
-		/* write to file (if open) */
-		if(f)
+		while(txsz)
 		{
-			act = fwrite(buffer, 1, rsz, f);
-			if(act != rsz)
+			/* get from socket */
+			size_t bsz = txsz <  bufsz ? txsz : bufsz;
+			rsz = recv(sock, buffer, bsz, 0);
+			//ESP_LOGI(TAG, "Received %d", rsz);
+			
+			/* write to file (if open) */
+			if(f)
 			{
-				ESP_LOGE(TAG, "Failed writing %d - actual = %d", rsz, act);
-				*err |= 4;
+				act = fwrite(buffer, 1, rsz, f);
+				if(act != rsz)
+				{
+					ESP_LOGE(TAG, "Failed writing %d - actual = %d", rsz, act);
+					*err |= 4;
+				}
 			}
+			
+			txsz -= rsz;
+			tot += rsz;
 		}
 		
-		txsz -= rsz;
-		tot += rsz;
+		free(buffer);
 	}
-
+	else
+	{
+		ESP_LOGE(TAG, "Couldn't allocate %d", bufsz);
+		*err |= 8;
+	}
+	
 	/* close file */
 	if(f)
 	{

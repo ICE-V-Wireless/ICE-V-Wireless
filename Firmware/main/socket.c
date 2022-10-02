@@ -199,9 +199,16 @@ static void handle_ps_in(const int sock, char *err, char *left, int leftsz, int 
 	size_t act, rsz, tot, use, bufsz;
 	FILE* f = NULL;
 	
-	/* note SPIFFS avail */
+    /* Check if psram file exists before removing */
+    struct stat st;
+    if (stat(psram_file, &st) == 0) {
+        // Delete it if it exists
+        unlink(psram_file);
+    }
+
+	/* note SPIFFS avail space - only allow 75% utilization per docs */
 	spiffs_info(&tot, &use);
-	tot = tot - use;
+	tot = ((4*tot)/3) - use;
 	ESP_LOGI(TAG, "PS_IN: SPIFFS available: %d", tot);
 	
 	/* open file if enough space in SPIFFS */

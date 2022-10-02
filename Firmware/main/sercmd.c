@@ -19,7 +19,7 @@
 #define MAX_RDSZ 64
 
 /* uncomment to turn on UART2 debugging */
-#define SERCMD_DBG
+//#define SERCMD_DBG
 
 static const char* TAG = "sercmd";
 
@@ -162,9 +162,16 @@ static void sercmd_ps_in(int txsz)
 	FILE* f = NULL;
 	uint8_t err = 0;	
 	
-	/* note SPIFFS avail */
+    /* Check if psram file exists before removing */
+    struct stat st;
+    if (stat(psram_file, &st) == 0) {
+        // Delete it if it exists
+        unlink(psram_file);
+    }
+
+	/* note SPIFFS avail space - only allow 75% utilization per docs */
 	spiffs_info(&tot, &use);
-	tot = tot - use;
+	tot = ((4*tot)/3) - use;
 	uart2_printf("PS_IN: SPIFFS available: %d\r\n", tot);
 	
 	/* open file if enough space in SPIFFS */
@@ -337,6 +344,8 @@ void sercmd_task(void *pvParameters)
 							{
 								/* Command 0xA - PSRAM Init is special */
 								sercmd_ps_in(buffsz);
+								buffsz = 0;
+								cmdstate = 0;
 							}
 							else
 							{

@@ -196,7 +196,7 @@ send_c3usb.py --ps_wr=ADDR <file>
 ### Write PSRAM Init
 
 Writes data from <file> to the SPIFFS filesystem for loading at powerup into the 8MB PSRAM on the board starting at address ADDR.
-At this time file length is limited to the free SRAM in the ESP32C3 which is about 200kB.
+At this time the file length is limited to roughly the free space in the SPIFFS filesystem which is about 560kB.
 
 ```
 send_c3usb.py --ps_in=ADDR <file>
@@ -325,7 +325,7 @@ send_c3sock.py --load=<cfg#>
 
 Reads from the 8MB PSRAM on the board starting at address ADDR for LEN bytes.
 Output is sent to stdout so be sure to redirect to a file or pipe that can
-handle the raw binary data. At this time LEN is maximum 65536 bytes.
+handle the raw binary data.
 
 Note that you must have loaded an FPGA design that supports SPI pass-thru to the PSRAM - the easiest way to do this is by issuing the `--load=1` command prior.
 
@@ -347,7 +347,7 @@ send_c3sock.py --ps_wr=ADDR <file>
 ### Write PSRAM Init
 
 Writes data from to the SPIFFS filesystem for loading at powerup into the 8MB PSRAM on the board starting at address ADDR.
-At this time file length is limited to the free SRAM in the ESP32C3 which is about 200kB.
+At this time the file length is limited to roughly the free space in the SPIFFS filesystem which is about 560kB.
 
 ```
 send_c3sock.py --ps_in=ADDR <file>

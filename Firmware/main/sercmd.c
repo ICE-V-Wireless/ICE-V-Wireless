@@ -164,10 +164,20 @@ static void sercmd_ps_in(int txsz)
 	
     /* Check if psram file exists before removing */
     struct stat st;
-    if (stat(psram_file, &st) == 0) {
-        // Delete it if it exists
+    if(stat(psram_file, &st) == 0)
+	{
+        /* Delete it if it exists */
         unlink(psram_file);
-    }
+		
+#if 0
+		/* do SPIFFS garbage collection (not available in V4.4.2) */
+		if(esp_spiffs_gc(conf.partition_label, len) != ESP_OK)
+		{
+			uart2_printf("SPIFFS GC failed\r\n");			
+			err = 2;
+		}
+#endif
+	}
 
 	/* note SPIFFS avail space - only allow 75% utilization per docs */
 	spiffs_info(&tot, &use);

@@ -4,10 +4,9 @@
 
 import sys
 import os
-import time
+import getopt
 import socket
 import serial
-import getopt
 from serial.tools import list_ports
 import ping3
 
@@ -78,7 +77,7 @@ def send_file(name, cmmd, ptype, port):
         file.seek(0, os.SEEK_SET)
 
         if verbose:
-            print("Command", cmmd, "Size of", name, "is", file_len, "bytes")
+            print("send_file() - Command", cmmd, "Size of", name, "is", file_len, "bytes")
 
         # add the header with command
         magic = make_magic(cmmd)
@@ -88,7 +87,6 @@ def send_file(name, cmmd, ptype, port):
         # send payload to the C3 by chosen transport and get response
         if ptype == "serial":
             # serial uses tty already opened
-            print("Serial send", port)
             size = len(payload)
             while size:
                 written = tty.write(payload)
@@ -97,7 +95,6 @@ def send_file(name, cmmd, ptype, port):
             err, toks = recv_err_tokens(ptype, port)
         else:
             # send to the socket server on the C3
-            print("Socket send", port)
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((port, 3333))
                 s.sendall(payload)
@@ -107,6 +104,37 @@ def send_file(name, cmmd, ptype, port):
 
         if err:
             print("Error", err)
+
+# send a load command plus config ID
+def load_cfg(reg, ptype, port):
+    if verbose:
+        print("load_cfg(", reg, ")")
+
+    magic = make_magic(6)
+    regsz = 4
+    size = regsz.to_bytes(4, byteorder = 'little')
+    payload = b"".join([magic, size, reg.to_bytes(4, byteorder = 'little')])
+    
+    # send payload to the C3 by chosen transport and get response
+    if ptype == "serial":
+        # serial uses tty already opened
+        size = len(payload)
+        while size:
+            written = tty.write(payload)
+            size = size - written
+            payload = payload[written:]
+        err, toks = recv_err_tokens(ptype, port)
+    else:
+        # send to the socket server on the C3
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((port, 3333))
+            s.sendall(payload)
+            reply = s.recv(1024)
+            err = reply[0]
+            s.close()
+
+    if err:
+        print("Error", err)
 
 # usage text for command line
 def usage():
@@ -156,7 +184,8 @@ if __name__ == "__main__":
     elif ldev.startswith("wifi"):
         ptype = "ip"
         port = get_IP_from_device(dev)
-        if ping3.ping(port, timeout=0.5)==False:
+        pp3 = ping3.ping(port, timeout=1)
+        if pp3 == False or pp3 == None:
             print('No ICE-V-Wireless found at IP', port)
             sys.exit(2)            
     elif ldev.startswith("auto"):
@@ -165,7 +194,8 @@ if __name__ == "__main__":
         if(port == 'none'):
             ptype = "ip"
             port = get_IP_from_device(dev)
-            if ping3.ping(port, timeout=0.5)==False:
+            pp3 = ping3.ping(port, timeout=1)
+            if pp3 == False or pp3 == None:
                 print('No ICE-V-Wireless found at either USB or WIFI')
                 sys.exit(2)            
     else:
@@ -185,6 +215,10 @@ if __name__ == "__main__":
         # bitstream file handler
         if len(args) > 0:
             send_file(args[0], cmmd, ptype, port)
+
+            # load the FPGA with new bitstream if written to flash
+            if cmmd == 14:
+                load_cfg(0, ptype, port)
         else:
             print("missing filename")
     else:

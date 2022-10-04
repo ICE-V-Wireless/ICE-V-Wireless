@@ -201,10 +201,20 @@ static void handle_ps_in(const int sock, char *err, char *left, int leftsz, int 
 	
     /* Check if psram file exists before removing */
     struct stat st;
-    if (stat(psram_file, &st) == 0) {
-        // Delete it if it exists
+    if(stat(psram_file, &st) == 0)
+	{
+        /* Delete it if it exists */
         unlink(psram_file);
-    }
+		
+#if 0
+		/* do SPIFFS garbage collection (not available in V4.4.2) */
+		if(esp_spiffs_gc(conf.partition_label, len) != ESP_OK)
+		{
+			ESP_LOGE(TAG, "SPIFFS GC failed");			
+			return ESP_FAIL;
+		}
+#endif
+	}
 
 	/* note SPIFFS avail space - only allow 75% utilization per docs */
 	spiffs_info(&tot, &use);

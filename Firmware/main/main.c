@@ -179,7 +179,6 @@ void app_main(void)
 	else
 		ESP_LOGE(TAG, "Serial Command Init Failed");
 #endif
-		
 	
 	/* wait here forever and blink */
     ESP_LOGI(TAG, "Looping...", btime);

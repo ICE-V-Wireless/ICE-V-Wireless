@@ -5,7 +5,8 @@
 
 #include <string.h>
 #include "spiffs.h"
-#include "esp_spiffs.h"
+#include <fcntl.h>
+#include <unistd.h>
 
 static const char* TAG = "spiffs";
 
@@ -127,24 +128,43 @@ esp_err_t spiffs_read(char *fname, uint8_t **buffer, uint32_t *len)
  */
 esp_err_t spiffs_write(char *fname, uint8_t *buffer, uint32_t len)
 {
-	esp_err_t stat = ESP_OK;
+	esp_err_t err = ESP_OK;
 	size_t act;
-    FILE* f = fopen(fname, "wb");
-    if (f != NULL)
+	FILE* f;
+    struct stat st;
+	
+    /* Check if file exists and remove */
+    if(stat(fname, &st) == 0)
+	{
+        /* Delete it if it exists */
+        unlink(psram_file);
+		
+#if 0
+		/* do SPIFFS garbage collection (not available in V4.4.2) */
+		if(esp_spiffs_gc(conf.partition_label, len) != ESP_OK)
+		{
+			ESP_LOGE(TAG, "SPIFFS GC failed");			
+			return ESP_FAIL;
+		}
+#endif
+	}
+
+    f = fopen(fname, "wb");
+    if(f != NULL)
 	{
 		ESP_LOGI(TAG, "Writing %d to file %s ", len, fname);
 		if((act = fwrite(buffer, 1, len, f)) != len)
 		{
 			ESP_LOGE(TAG, "Failed writing - actual = %d", act);
-			stat = ESP_FAIL;
+			err = ESP_FAIL;
 		}
 		fclose(f);
 	}
 	else
 	{
 		ESP_LOGE(TAG, "Failed to open file for writing");
-		stat = ESP_ERR_NOT_FOUND;
+		err = ESP_ERR_NOT_FOUND;
     }
 	
-	return stat;
+	return err;
 }

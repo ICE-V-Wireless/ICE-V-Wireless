@@ -43,7 +43,7 @@ line, along with power, ground and reset connections.
 
 [![.github/workflows/build-firmware.yml](https://github.com/ICE-V-Wireless/ICE-V-Wireless/actions/workflows/build-firmware.yml/badge.svg)](https://github.com/ICE-V-Wireless/ICE-V-Wireless/actions/workflows/build-firmware.yml)
 
-The ESP32 firmware is written in C with the ESP-IDF V5.0 toolchain and
+The ESP32 firmware is written in C with the ESP-IDF toolchain and
 libraries. It provides both a USB and a TCP socket interface over WiFi with the
 following features:
 * Initial loading of the FPGA configuration at powerup from a SPIFFS filesystem
@@ -70,7 +70,10 @@ with the ESP32C3 which supports the features outlined in the Firmware section
 above.
 
 ## Getting One
-See here:
+ICE-V-Wireless boards are available via a GroupGets crowdfunding campaign
 
+### First round (closed)
 https://groupgets.com/campaigns/1036-ice-v-wireless
 
+### Second round (open as of 10-18-2022)
+https://groupgets.com/campaigns/1090-ice-v-wireless-round-2

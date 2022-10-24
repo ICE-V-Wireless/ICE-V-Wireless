@@ -4,7 +4,7 @@ If you've just gotten an ICE-V-Wireless board you may have some questions about 
 
 ## What's on the board
 
-![](/home/ericb/Desktop/ice-v/ICE-V-Wireless/docs/ice-v_front_ann.png)
+<img src="docs/ice-v_front_ann.png" width="640" />
 
 - Antenna - this is the 2.4GHz RF antenna for WiFi and Bluetooth signals. Keep it well clear of metal objects for best reception.
 

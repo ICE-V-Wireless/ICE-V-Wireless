@@ -48,18 +48,32 @@ To power up for the first time simply connect a USB C cable between the ICE-V-Wi
 
 - The yellow Charge LED may also flash quickly if no battery is connected.
 
-If you have connected to a computer you may see that a new USB serial port has opened. This can be used with the provided [Python](python) scripts to configure and control the board.
+### Operation
+
+If you have connected to a computer you may see that a new USB serial port has opened. This can be used with the provided [Python](python) scripts to configure and control the board. Clone this repository or download the scripts and follow the documentation to get your board running on your WiFi network and begin communicating with it.
 
 ## Default Firmware
 
-As shipped the ICE-V-Wireless board comes pre-loaded with the latest firmware from this repository which provides both WiFi and USB control options. Communicating with this firmware in order to set WiFi credentials, install FPGA designs or query the running designs requires the use of several [Python](python) scripts.
+As shipped the ICE-V-Wireless board comes pre-loaded with the latest firmware from this repository which provides both WiFi and USB control options. Source code for the default firmware is found [here](Firmware). Communicating with this firmware in order to set WiFi credentials, install FPGA designs or query the running designs requires the use of several [Python](python) scripts.
+
+### Alternative Firmware
+
+Several other firmware packages are available:
+
+- [WiFi Manager]([GitHub - ICE-V-Wireless/ICE-V_WiFiMgr: TCP Socket Firmware for ICE-V with Soft AP Provisioning](https://github.com/ICE-V-Wireless/ICE-V_WiFiMgr)) - this version of firmware is written using the ESP IDF and provides a soft Access Point (AP) and captive portal for configuring the WiFi credentials.
+
+- [Arduino Firmware]([GitHub - ICE-V-Wireless/ICE-V-Arduino: Arduino-based ESP32 firmware for the ICE-V Wireless board](https://github.com/ICE-V-Wireless/ICE-V-Arduino)) - this version of the firmware is developed using the Arduino IDE and provides a soft AP and captive portal for configuring the WiFi credentials. Start here if you're more comfortable coding in the Arduino environment.
+
+- [Micropython]([GitHub - ICE-V-Wireless/ICE-V_Micropython: Micropython resources for use with the ICE-V Wireless board](https://github.com/ICE-V-Wireless/ICE-V_Micropython)) - this repository provides instructions for setting up Micropython on the ICE-V-Wireless board as well as embedded Python scripts for configuring and accessing the FPGA. Start here if you prefer Python development.
 
 ## Default Gateware
 
 The default FPGA design contains a RISC-V soft core processor and a number of peripherals to control on-board features such as the RGB LED. You can find out more about the design [here](Gateware).
 
+### Alternative Gateware
 
+Additional FPGA designs may be added to the ICE-V-Wireless projects group.
 
+## Going Further
 
-
-
+Developing your own firmware and gateware is the core reason we created the ICE-V-Wireless board so you're encouraged to study the examples and explore how you can extend them for your own projects. For questions and help with development for the ICE-V-Wireless consider joining the [QWERTY Embedded Discord]([QWERTY Embedded](https://discord.gg/uzS2Xy2D)) community.

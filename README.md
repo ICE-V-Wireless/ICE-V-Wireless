@@ -77,3 +77,7 @@ https://groupgets.com/campaigns/1036-ice-v-wireless
 
 ### Second round (open as of 10-18-2022)
 https://groupgets.com/campaigns/1090-ice-v-wireless-round-2
+
+## Getting Started
+If you've just gotten an ICE-V-Wireless board and want to quickly get going
+read the [Getting Started](Getting-Started.md) page.

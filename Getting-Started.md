@@ -26,7 +26,7 @@ If you've just gotten an ICE-V-Wireless board you may have some questions about 
 
 - Charge LED - lights yellow when the LiPo battery is charging. It is normal for this LED to flash quickly when no battery is connected.
 
-- Battery - JST PH socket for connection to standard LiPo batterie connectors.
+- Battery - JST PH socket for connection to standard LiPo battery connector.
 
 - PMOD power jumpers - allow selection of the supply voltage for the PMODs. Normally connected to 3.3v. Can be connected to the raw 4V by cutting a trace and soldering.
 
@@ -76,4 +76,4 @@ Additional FPGA designs may be added to the ICE-V-Wireless projects group.
 
 ## Going Further
 
-Developing your own firmware and gateware is the core reason we created the ICE-V-Wireless board so you're encouraged to study the examples and explore how you can extend them for your own projects. For questions and help with development for the ICE-V-Wireless consider joining the [QWERTY Embedded Discord](https://discord.gg/uzS2Xy2D) community.
+Developing your own firmware and gateware is the core reason we created the ICE-V-Wireless board so you're encouraged to study the examples and explore how you can extend them for your own projects. For questions and help with development for the ICE-V-Wireless consider joining the [QWERTY Embedded Discord](https://discord.gg/DM8xAN4Jjx) community.

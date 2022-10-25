@@ -60,11 +60,11 @@ As shipped the ICE-V-Wireless board comes pre-loaded with the latest firmware fr
 
 Several other firmware packages are available:
 
-- [WiFi Manager]([GitHub - ICE-V-Wireless/ICE-V_WiFiMgr: TCP Socket Firmware for ICE-V with Soft AP Provisioning](https://github.com/ICE-V-Wireless/ICE-V_WiFiMgr)) - this version of firmware is written using the ESP IDF and provides a soft Access Point (AP) and captive portal for configuring the WiFi credentials.
+- [WiFi Manager](https://github.com/ICE-V-Wireless/ICE-V_WiFiMgr) - this version of firmware is written using the ESP IDF and provides a soft Access Point (AP) and captive portal for configuring the WiFi credentials.
 
-- [Arduino Firmware]([GitHub - ICE-V-Wireless/ICE-V-Arduino: Arduino-based ESP32 firmware for the ICE-V Wireless board](https://github.com/ICE-V-Wireless/ICE-V-Arduino)) - this version of the firmware is developed using the Arduino IDE and provides a soft AP and captive portal for configuring the WiFi credentials. Start here if you're more comfortable coding in the Arduino environment.
+- [Arduino Firmware](https://github.com/ICE-V-Wireless/ICE-V-Arduino) - this version of the firmware is developed using the Arduino IDE and provides a soft AP and captive portal for configuring the WiFi credentials. Start here if you're more comfortable coding in the Arduino environment.
 
-- [Micropython]([GitHub - ICE-V-Wireless/ICE-V_Micropython: Micropython resources for use with the ICE-V Wireless board](https://github.com/ICE-V-Wireless/ICE-V_Micropython)) - this repository provides instructions for setting up Micropython on the ICE-V-Wireless board as well as embedded Python scripts for configuring and accessing the FPGA. Start here if you prefer Python development.
+- [Micropython](https://github.com/ICE-V-Wireless/ICE-V_Micropython) - this repository provides instructions for setting up Micropython on the ICE-V-Wireless board as well as embedded Python scripts for configuring and accessing the FPGA. Start here if you prefer Python development.
 
 ## Default Gateware
 
@@ -76,4 +76,4 @@ Additional FPGA designs may be added to the ICE-V-Wireless projects group.
 
 ## Going Further
 
-Developing your own firmware and gateware is the core reason we created the ICE-V-Wireless board so you're encouraged to study the examples and explore how you can extend them for your own projects. For questions and help with development for the ICE-V-Wireless consider joining the [QWERTY Embedded Discord]([QWERTY Embedded](https://discord.gg/uzS2Xy2D)) community.
+Developing your own firmware and gateware is the core reason we created the ICE-V-Wireless board so you're encouraged to study the examples and explore how you can extend them for your own projects. For questions and help with development for the ICE-V-Wireless consider joining the [QWERTY Embedded Discord](https://discord.gg/uzS2Xy2D) community.

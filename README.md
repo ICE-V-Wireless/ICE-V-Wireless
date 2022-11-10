@@ -70,13 +70,8 @@ with the ESP32C3 which supports the features outlined in the Firmware section
 above.
 
 ## Getting One
-ICE-V-Wireless boards are available via a GroupGets crowdfunding campaign
-
-### First round (closed)
-https://groupgets.com/campaigns/1036-ice-v-wireless
-
-### Second round (open as of 10-18-2022)
-https://groupgets.com/campaigns/1090-ice-v-wireless-round-2
+ICE-V-Wireless boards are available via the GroupGets store:
+https://store.groupgets.com/products/ice-v-wireless
 
 ## Getting Started
 If you've just gotten an ICE-V-Wireless board and want to quickly get going

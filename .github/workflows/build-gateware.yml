@@ -21,7 +21,7 @@ jobs:
         sudo mv riscv64-unknown-elf-gcc-8.3.0-2019.08.0-x86_64-linux-ubuntu14 /opt/riscv-gcc
 
     - name: Install FPGA toolchain
-      uses: YosysHQ/setup-oss-cad-suite@v2
+      uses: YosysHQ/setup-oss-cad-suite@v1
 
     - name: Build Gateware
       working-directory: Gateware/icestorm

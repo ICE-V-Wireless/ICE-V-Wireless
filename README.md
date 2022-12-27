@@ -76,3 +76,11 @@ https://store.groupgets.com/products/ice-v-wireless
 ## Getting Started
 If you've just gotten an ICE-V-Wireless board and want to quickly get going
 read the [Getting Started](Getting-Started.md) page.
+
+## Review and Tutorial
+[Tom Verbeure](https://tomverbeure.github.io/) has generously written a great review and tutorial for the
+ICE-V-Wireless board on his blog:
+[An In-Depth Look at the ICE-V Wireless FPGA Development Board](https://tomverbeure.github.io/2022/12/27/The-ICE-V-Wireless-FPGA-Board.html)
+
+You'll find a lot of additional detail and some clear step-by-step guides
+for getting tools set up to build firmware and gateware for the board.

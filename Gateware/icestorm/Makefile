@@ -37,9 +37,10 @@ TECH_LIB = $(TOOLS)/share/yosys/ice40/cells_sim.v
 
 all: $(PROJ).bin
 
-$(FAKE_HEX):
-	$(ICEBRAM) -g 32 2048 > $(FAKE_HEX)
-
+$(FAKE_HEX): $(REAL_HEX)
+#	$(ICEBRAM) -g 32 2048 > $(FAKE_HEX)
+	cp $(REAL_HEX) $(FAKE_HEX)
+	
 %.json: $(SRC) $(FAKE_HEX)
 	$(YOSYS) -p 'synth_ice40 -top $(PROJ) -json $@' $(SRC)
 
@@ -51,9 +52,10 @@ $(REAL_HEX):
 	cp ../riscv/c/main.hex ./$(REAL_HEX)
 		
 %.bin: %.asc $(REAL_HEX)
-	$(ICEBRAM) $(FAKE_HEX) $(REAL_HEX) < $< > temp.asc
-	$(ICEPACK) temp.asc $@
-
+#	$(ICEBRAM) $(FAKE_HEX) $(REAL_HEX) < $< > temp.asc
+#	$(ICEPACK) temp.asc $@
+	$(ICEPACK) $< $@
+	
 prog: $(PROJ).bin
 	$(SENDBIT) $(PROJ).bin
 

@@ -39,6 +39,9 @@ line, along with power, ground and reset connections.
 ### Pinout
 <img src="docs/pinout.png" width="640" />
 
+### Schematic
+A PDF of the schematic is here: [ICE-V-Wireless Schematic](docs/esp32c3_fpga_schematic.pdf)
+
 ## Firmware
 
 [![.github/workflows/build-firmware.yml](https://github.com/ICE-V-Wireless/ICE-V-Wireless/actions/workflows/build-firmware.yml/badge.svg)](https://github.com/ICE-V-Wireless/ICE-V-Wireless/actions/workflows/build-firmware.yml)

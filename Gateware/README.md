@@ -2,10 +2,14 @@
 This directory contains gateware designs for the ICE-V Wireless.
 
 ## Designs
-* Factory Bitstream - the demo gateware that ships with the board.
-* SPI Pass - a simple SPI pass-thru design that's used by the firmware
+* [Factory Bitstream](factory_bitstream) - the demo gateware that ships with the board.
+* [SPI Pass](spi_pass) - a simple SPI pass-thru design that's used by the firmware
 to load the PSRAM at boot time.
-* Blinky Demo - a very basic LED blinker for learning.
+* [Blinky Demo](blinky_demo) - a very basic LED blinker for learning.
+
+## Prerequisites
+Building Gateware requires installation of the OSS CAD Suite as well as a
+RISC-V GCC toolchain. Details of this process are coming soon.
 
 ## Building
 To build these gateware bitstreams:

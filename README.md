@@ -16,7 +16,8 @@ This project comprises both hardware, firmware, gateware and host-side
 communication utilities.
 
 ## Hardware
-The hardware design is provided as schematic and layout in KiCAD 6 format.
+The [Hardware](Hardware) directory provides the schematic and PCB layout in
+KiCAD 6 format.
 The design provides:
 * Three standard PMOD connectors spaced to accommodate
 dual-PMOD modules with all eight signal pins directly connected to the
@@ -46,9 +47,10 @@ A PDF of the schematic is here: [ICE-V-Wireless Schematic](docs/esp32c3_fpga_sch
 
 [![.github/workflows/build-firmware.yml](https://github.com/ICE-V-Wireless/ICE-V-Wireless/actions/workflows/build-firmware.yml/badge.svg)](https://github.com/ICE-V-Wireless/ICE-V-Wireless/actions/workflows/build-firmware.yml)
 
-The ESP32 firmware is written in C with the ESP-IDF toolchain and
-libraries. It provides both a USB and a TCP socket interface over WiFi with the
-following features:
+The [Firmware](Firmware) directory provides the full source for the ESP32 firmware
+that is loaded into the ICE-V-Wireless board from the factory. The ESP32 firmware
+is written in C with the ESP-IDF toolchain and librarie and provides both a USB
+and a TCP socket interface over WiFi with the following features:
 * Initial loading of the FPGA configuration at powerup from a SPIFFS filesystem
 contained in the ESP32C3F[H/N]4 flash. 
 <br/>(See [Page 9 of the ESP32-C3 Series Datasheet](https://www.espressif.com/sites/default/files/documentation/esp32-c3_datasheet_en.pdf#page=9)
@@ -68,9 +70,9 @@ the shipping FPGA demo designs as well as additional designs for learning how to
 use the ICE-V-Wireless.
 
 ## Host-side Utilities
-Command-line Python scripts are provided to communicate over USB and WiFi
-with the ESP32C3 which supports the features outlined in the Firmware section
-above.
+The [python](python) directory contains the command-line Python scripts which are
+provided to communicate over USB and WiFi with the default ICE-V-Wireless firmware
+and support the features outlined in the Firmware section above.
 
 ## Getting One
 ICE-V-Wireless boards are available via the GroupGets store:

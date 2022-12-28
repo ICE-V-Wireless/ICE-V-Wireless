@@ -85,6 +85,9 @@ ICE-V-Wireless board on his blog:
 You'll find a lot of additional detail and some clear step-by-step guides
 for getting tools set up to build firmware and gateware for the board.
 
-[gojimmypi](https://gojimmypi.github.io/) has a writeup on his blog from early-on in the board development
+[gojimmypi](https://gojimmypi.github.io/) has a few writeups on his blog from early-on in the board development
 which provides some insight into ESP32 devtools and provides some helpful links:
+
 [ICE-V Wireless FPGA with ESP32-C3](https://gojimmypi.github.io/ICE-V-Wireless-FPGA-ESP32-C3/)
+
+[SERV and FuseSoC for the ICE-V Wireless FPGA](https://gojimmypi.github.io/ICE-V-Wireless-SERV-fusesoc/)

@@ -78,6 +78,9 @@ and support the features outlined in the Firmware section above.
 ICE-V-Wireless boards are available via the GroupGets store:
 https://store.groupgets.com/products/ice-v-wireless
 
+US customers can purchase through Digi-Key:
+https://www.digikey.com/en/products/detail/groupgets-llc/ice-v-wireless/17168543
+
 ## Getting Started
 If you've just gotten an ICE-V-Wireless board and want to quickly get going
 read the [Getting Started](Getting-Started.md) page.

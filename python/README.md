@@ -1,7 +1,16 @@
 # Python Scripts For Firmware V0.3
 
 This directory contains the host-side Python utility scripts which are used to
-communicate with the ICE-V Wireless board over USB and WiFi.
+communicate with the ICE-V Wireless board over USB and WiFi. There are currently
+three different scripts available:
+* send_c3usb.py - communicates with the board over a local USB connection and
+allows setting WiFi credentials as well as flashing, "instant" loading and
+miscellaneous housekeeping functions.
+* send_c3sock.py - communicates with the board over WiFi for flashing, "instant"
+loading and miscellaneous houskeeping. Does not allow setting WiFi credentials.
+* icevwprog.py - simplified flashing and "instant" loading but no housekeeping
+functions. Attempts to autodetect both USB and WiFi connections so it can be used
+as a back-end for other devtools that have limited control over connection details.
 
 ## Installation
 
@@ -352,3 +361,41 @@ At this time the file length is limited to roughly the free space in the SPIFFS 
 ```
 send_c3sock.py --ps_in=ADDR <file>
 ```
+
+## icevwprog.py
+A simplified interface for loading and flashing which attempts to autodetect
+the interface (either USB or WiFi). This may be useful as a back-end for some
+FPGA development tools that have limited flexibility when setting up the
+connection to the target board.
+```
+./icevwprog.py  [options] <file>
+  -h, --help              : this message
+  -d, --device=<DEV>      : device ID to connect to
+  -S, --sram              : program to FPGA SRAM instead of ESP32 Flash
+  -v, --verbose           : show work
+```
+
+The <DEV> device ID is a flexible identifier that can select various connections
+but is not usually required. The details are as follows:
+* For autodetection (the default) use <DEV> = auto
+* To force a USB connection use <DEV> = usb
+  * for a specific USB device port use <DEV> = usb:port (eg usb:/dev/ttyACM0)
+* To force a WiFi connection use <DEV> = wifi
+  * for a specific WiFi device address use <DEV> = wifi:IP_ADDR (eg wifi:192.168.0.100)
+
+### Fast FPGA programming
+
+To quickly load a new configuration into the FPGA
+
+```
+icevwprog.py -S <bitstream>
+```
+
+### Update default power-on configuration
+
+To flash a new default configuration for loading at power-up
+
+```
+icevwprog.py <bitstream>
+```
+

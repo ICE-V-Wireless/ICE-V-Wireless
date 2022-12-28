@@ -375,13 +375,13 @@ connection to the target board.
   -v, --verbose           : show work
 ```
 
-The <DEV> device ID is a flexible identifier that can select various connections
+The `<DEV>` device ID is a flexible identifier that can select various connections
 but is not usually required. The details are as follows:
-* For autodetection (the default) use <DEV> = auto
-* To force a USB connection use <DEV> = usb
-  * for a specific USB device port use <DEV> = usb:port (eg usb:/dev/ttyACM0)
+* For autodetection (the default) use `<DEV>` = auto
+* To force a USB connection use `<DEV>` = usb
+  * for a specific USB device port use `<DEV>` = usb:port (eg usb:/dev/ttyACM0)
 * To force a WiFi connection use <DEV> = wifi
-  * for a specific WiFi device address use <DEV> = wifi:IP_ADDR (eg wifi:192.168.0.100)
+  * for a specific WiFi device address use `<DEV>` = wifi:IP_ADDR (eg wifi:192.168.0.100)
 
 ### Fast FPGA programming
 

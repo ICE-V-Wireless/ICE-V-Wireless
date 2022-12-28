@@ -2,28 +2,16 @@
 # Modified from examples in icestorm distribution
 # 01-16-18 E. Brombaugh
 
-# src directory
-VPATH = ../src ../riscv/src
-
-SRC =	../src/bitstream.v ../src/spi_slave.v \
-		../riscv/src/system.v ../riscv/src/picorv32.v \
-		../riscv/src/spram_16kx32.v \
-		../riscv/src/acia.v ../riscv/src/acia_tx.v ../riscv/src/acia_rx.v \
-		../riscv/src/wb_bus.v ../riscv/src/wb_master.v \
-		../riscv/src/mailbox.v ../riscv/src/fifo1.v
-
-# preparing the machine code
-FAKE_HEX =	rom.hex
-REAL_HEX =  code.hex
+SRC =	../src/spi_pass.v
 
 # project stuff
-PROJ = bitstream
-PIN_DEF = ../src/bitstream.pcf
-SDC = ../src/bitstream.sdc
+PROJ = spi_pass
+PIN_DEF = ../src/spi_pass.pcf
+SDC = ../src/spi_pass.sdc
 DEVICE = up5k
 PACKAGE = sg48
 
-TOOLS ?= /opt/openfpga/fpga-toolchain
+TOOLS = /opt/openfpga/fpga-toolchain
 YOSYS = $(TOOLS)/bin/yosys
 NEXTPNR = $(TOOLS)/bin/nextpnr-ice40
 NEXTPNR_ARGS = --pre-pack $(SDC) --package $(PACKAGE) --$(DEVICE) --timing-allow-fail
@@ -37,31 +25,17 @@ TECH_LIB = $(TOOLS)/share/yosys/ice40/cells_sim.v
 
 all: $(PROJ).bin
 
-$(FAKE_HEX): $(REAL_HEX)
-#	$(ICEBRAM) -g 32 2048 > $(FAKE_HEX)
-	cp $(REAL_HEX) $(FAKE_HEX)
-	
-%.json: $(SRC) $(FAKE_HEX)
+%.json: $(SRC)
 	$(YOSYS) -p 'synth_ice40 -top $(PROJ) -json $@' $(SRC)
 
 %.asc: %.json $(PIN_DEF) 
 	$(NEXTPNR) $(NEXTPNR_ARGS) --json $< --pcf $(PIN_DEF) --asc $@
-		
-$(REAL_HEX):
-	$(MAKE) -C ../riscv/c/ main.hex
-	cp ../riscv/c/main.hex ./$(REAL_HEX)
-		
-%.bin: %.asc $(REAL_HEX)
-#	$(ICEBRAM) $(FAKE_HEX) $(REAL_HEX) < $< > temp.asc
-#	$(ICEPACK) temp.asc $@
+
+%.bin: %.asc
 	$(ICEPACK) $< $@
-	
+
 prog: $(PROJ).bin
 	$(SENDBIT) $(PROJ).bin
-
-recode:
-	rm -f $(REAL_HEX) $(PROJ).bin
-	$(MAKE) prog
     
 %.rpt: %.asc
 	$(ICETIME) -d $(DEVICE) -mtr $@ $<

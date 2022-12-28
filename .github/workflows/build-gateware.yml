@@ -24,7 +24,7 @@ jobs:
       uses: YosysHQ/setup-oss-cad-suite@v1
 
     - name: Build Gateware
-      working-directory: Gateware/icestorm
+      working-directory: Gateware/factory_bitstream/icestorm
       shell: bash
       env:
         TOOLS: ${{ runner.temp }}/.setup-oss-cad-suite/oss-cad-suite

@@ -60,9 +60,9 @@ for part number details).
 
 [![.github/workflows/build-gateware.yml](https://github.com/ICE-V-Wireless/ICE-V-Wireless/actions/workflows/build-gateware.yml/badge.svg)](https://github.com/ICE-V-Wireless/ICE-V-Wireless/actions/workflows/build-gateware.yml)
 
-The iCE40 FPGA gateware provided is a simple design that demonstrates basic
-SPI monitor/control via SPI with a flashing LED. More advanced designs are
-possible.
+The [Gateware](Gateware) directory contains HDL source and build materials for
+the shipping FPGA demo designs as well as additional designs for learning how to
+use the ICE-V-Wireless.
 
 ## Host-side Utilities
 Command-line Python scripts are provided to communicate over USB and WiFi

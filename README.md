@@ -78,16 +78,17 @@ If you've just gotten an ICE-V-Wireless board and want to quickly get going
 read the [Getting Started](Getting-Started.md) page.
 
 ## Reviews and Tutorials
-[Tom Verbeure](https://tomverbeure.github.io/) has generously written a great review and tutorial for the
+* [Tom Verbeure](https://tomverbeure.github.io/) has generously written a great review and tutorial for the
 ICE-V-Wireless board on his blog:
 [An In-Depth Look at the ICE-V Wireless FPGA Development Board](https://tomverbeure.github.io/2022/12/27/The-ICE-V-Wireless-FPGA-Board.html)
 
 You'll find a lot of additional detail and some clear step-by-step guides
 for getting tools set up to build firmware and gateware for the board.
 
-[gojimmypi](https://gojimmypi.github.io/) has a few writeups on his blog from early-on in the board development
-which provides some insight into ESP32 devtools and provides some helpful links:
+* [gojimmypi](https://gojimmypi.github.io/) has a few writeups on his blog from early-on in the
+board development which provide some insight into devtools and build systems plus
+providing some helpful links:
 
-[ICE-V Wireless FPGA with ESP32-C3](https://gojimmypi.github.io/ICE-V-Wireless-FPGA-ESP32-C3/)
+  * [ICE-V Wireless FPGA with ESP32-C3](https://gojimmypi.github.io/ICE-V-Wireless-FPGA-ESP32-C3/)
 
-[SERV and FuseSoC for the ICE-V Wireless FPGA](https://gojimmypi.github.io/ICE-V-Wireless-SERV-fusesoc/)
+  * [SERV and FuseSoC for the ICE-V Wireless FPGA](https://gojimmypi.github.io/ICE-V-Wireless-SERV-fusesoc/)

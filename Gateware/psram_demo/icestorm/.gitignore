@@ -1,0 +1,6 @@
+*.bin
+*.json
+*.hex
+*.asc
+*.cf
+*.o

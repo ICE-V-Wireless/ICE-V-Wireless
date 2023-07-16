@@ -15,11 +15,12 @@
 		},
 		"ghcr.io/wxw-matt/devcontainer-features/command_runner:0": {
 			"command1":"pip3 install --user --upgrade 'amaranth[builtin-yosys]'",
-			"command2":"usermod -a -G dialout vscode"
+			"command2":"pip3 install pyserial",
+			"command3":"usermod -a -G dialout vscode"
 		}
 	},
 
-	"runArgs": [ "--device=/dev/ttyACM0" ]
+	"runArgs": [ "--device=/dev/ttyACM0" ],
 
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
@@ -28,11 +29,19 @@
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
+	"updateContentCommand": "echo \"export STARSHIP_CONFIG=/workspaces/ICE-V-Wireless/.devcontainer/config/starship.toml\" >> /home/vscode/.bashrc",
 	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "uname -a",
+	"postCreateCommand": "echo \"eval \\\"\\$(starship init bash)\\\" \" >> /home/vscode/.bashrc",
 
 	// Configure tool-specific properties.
-	// "customizations": {},
+	"customizations": {
+				// Configure properties specific to VS Code.
+				"vscode": {
+					// Set *default* container specific settings.json values on container create.
+					"settings": {},
+					"extensions": ["mshr-h.veriloghdl","ms-vscode.hexeditor"]
+				}
+	}
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"

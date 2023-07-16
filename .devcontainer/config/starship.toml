@@ -1,0 +1,130 @@
+add_newline = false
+
+format = """
+$username\
+$hostname\
+$kubernetes\
+$directory\
+$git_branch\
+$git_commit\
+$git_state\
+$git_metrics\
+$git_status\
+$docker_context\
+$package\
+$cmake\
+$dotnet\
+$julia\
+$nodejs\
+$memory_usage\
+$azure\
+$env_var\
+$sudo\
+$cmd_duration\
+$jobs\
+$memory_usage\
+$status$\
+fill\
+$conda\
+$python\
+$time
+$shell\
+$character"""
+
+[azure]
+disabled = false
+symbol = "󰠅 "
+style = "blue bold"
+format = '\[[$symbol($profile)(\($region\))(\[$duration\])]($style)\]'
+
+[cmake]
+format = '\[[$symbol($version)]($style)\]'
+
+[cmd_duration]
+disabled = false
+format = '\[[⏱️ $duration]($style)\]'
+
+[conda]
+symbol = "🅒 "
+ignore_base = false
+style = "bright-black"
+format = '\[[$symbol$environment]($style)\]'
+
+[directory]
+read_only = " 󰌾"
+truncate_to_repo = false
+truncation_symbol = "…/"
+
+[directory.substitutions]
+"C:/repos" = ""
+"~/repos" = ""
+"/workspaces" = ""
+
+[docker_context]
+symbol = " "
+style = "bold blue"
+format = '\[[$symbol$context]($style)\]'
+
+[dotnet]
+format = '\[[$symbol($version)(🎯 $tfm)]($style)\]'
+
+[git_branch]
+symbol = " "
+style = "bright-black"
+format = '\[[$symbol$branch]($style)\]'
+
+[git_status]
+format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)](218) ($ahead_behind$stashed)]($style)"
+style = "cyan"
+
+[git_state]
+format = '\([$state( $progress_current/$progress_total)]($style)\) '
+style = "bright-black"
+
+[julia]
+symbol = " "
+format = '\[[$symbol($version)]($style)\]'
+
+[memory_usage]
+disabled = false
+style = "bold blue"
+symbol = "󰍛 "
+format = '\[$symbol[$ram_pct( | $swap)]($style)\]'
+
+[nodejs]
+symbol = " "
+format = '\[[$symbol($version)]($style)\]'
+
+[package]
+symbol = "󰏗 "
+format = '\[[$symbol$version]($style)\]'
+
+[python]
+disabled = false
+symbol = "🐍"
+format = '\[[${symbol}${pyenv_prefix}(${version})(\($virtualenv\))]($style)\]'
+
+[sudo]
+format = '\[[as $symbol]\]'
+
+# Replace the "❯" symbol in the prompt with "➜"
+[character]                            # The name of the module we are configuring is "character"
+format = "$symbol"
+success_symbol = ""
+error_symbol = "❌"
+
+[fill]
+symbol = " "
+
+[time]
+disabled = false
+style = "bold green"
+format = '[$time]($style) '
+time_format = "%T"
+utc_time_offset = "-12"
+
+[shell]
+disabled = false
+style = "bold red"
+powershell_indicator = "🗲"
+bash_indicator = "\uebca"

@@ -100,3 +100,8 @@ providing some helpful links:
   * [ICE-V Wireless FPGA with ESP32-C3](https://gojimmypi.github.io/ICE-V-Wireless-FPGA-ESP32-C3/)
 
   * [SERV and FuseSoC for the ICE-V Wireless FPGA](https://gojimmypi.github.io/ICE-V-Wireless-SERV-fusesoc/)
+
+## ICE-V In Use
+Here are a few places where the ICE-V has appeared:
+* [ICE-V with Nuttx for motor control](https://gitlab.fel.cvut.cz/otrees/risc-v-esp32/ice-v-pmsm)
+* [ICE-V with Zephyr](https://docs.zephyrproject.org/latest/boards/others/icev_wireless/doc/index.html)

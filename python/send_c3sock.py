@@ -262,7 +262,7 @@ if __name__ == "__main__":
         if o in ("-h", "--help"):
             usage()
             sys.exit()
-        elif o in ("-a", "--addr"):
+        elif o in ("-a", "--address"):
             addr = a
         elif o in ("-b", "--battery"):
             cmmd = 2
